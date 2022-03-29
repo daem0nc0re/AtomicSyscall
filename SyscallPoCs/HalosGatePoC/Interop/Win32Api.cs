@@ -1,0 +1,32 @@
+﻿using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace HalosGatePoC.Interop
+{
+    class Win32Api
+    {
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern int FormatMessage(
+            Win32Const.FormatMessageFlags dwFlags,
+            IntPtr lpSource,
+            int dwMessageId,
+            int dwLanguageId,
+            StringBuilder lpBuffer,
+            int nSize,
+            IntPtr Arguments);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool FreeLibrary(IntPtr hLibModule);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualProtect(
+            IntPtr lpAddress,
+            int dwSize,
+            Win32Const.MemoryProtectionFlags flNewProtect,
+            ref Win32Const.MemoryProtectionFlags lpflOldProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
+        public static extern IntPtr LoadLibrary(string lpFileName);
+    }
+}
