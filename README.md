@@ -1,5 +1,5 @@
 # AtomicSyscall
-Tools and PoCs for Windows syscall investication.
+Tools and PoCs for Windows syscall investigation.
 
 
 ## Table Of Contents
