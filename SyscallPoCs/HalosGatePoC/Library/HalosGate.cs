@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using HalosGatePoC.Interop;
 
 namespace HalosGatePoC.Library
 {
@@ -485,9 +486,6 @@ namespace HalosGatePoC.Library
             }
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr GetPebAddress();
-
         /*
          * Global Variable
          */
@@ -532,6 +530,8 @@ namespace HalosGatePoC.Library
         {
             uint rvaExportDirectory;
             var results = new Dictionary<string, IntPtr>();
+
+            Console.WriteLine("[>] Trying to find the base address of ntdll.dll.");
 
             IntPtr hModule = SearchNtdllBase();
 
@@ -679,133 +679,17 @@ namespace HalosGatePoC.Library
 
         private static IntPtr SearchNtdllBase()
         {
-            IntPtr peb;
-            IntPtr bufferCode;
-            byte[] code;
-            Win32Const.MemoryProtectionFlags oldProtect = 0;
-            var entries = new List<IntPtr>();
-            PEB_LDR_DATA ldr;
-            LDR_DATA_TABLE_ENTRY ldrDataTableEntry;
-            IntPtr pLdr;
-            IntPtr pLdrDataTableEntry;
+            ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
 
-            Console.WriteLine("[>] Trying to find the base address of ntdll.dll.");
-
-            if (Environment.Is64BitOperatingSystem &&
-                !Environment.Is64BitProcess)
+            foreach (ProcessModule mod in modules)
             {
-                Console.WriteLine("[-] 32 bit process in 64 bit OS is not supported.");
-
-                return IntPtr.Zero;
-            }
-            else if (Environment.Is64BitOperatingSystem &&
-                (IntPtr.Size != 8))
-            {
-                Console.WriteLine("[-] In 64 bit OS, should be compiled with 64 bit pointer.");
-
-                return IntPtr.Zero;
-            }
-            else if (!Environment.Is64BitOperatingSystem &&
-                (IntPtr.Size != 4))
-            {
-                Console.WriteLine("[-] In 32 bit OS, should be compiled with 32 bit pointer.");
-
-                return IntPtr.Zero;
-            }
-
-            if (Environment.Is64BitOperatingSystem)
-            {
-                code = new byte[] {
-                    0x65, 0x48, 0x8b, 0x04, 0x25, 0x60, 0x00, 0x00, 0x00, // mov rax, gs:[0x60]
-                    0xC3                                                  // ret
-                };
-            }
-            else
-            {
-                code = new byte[] {
-                    0x64, 0xA1, 0x30, 0x00, 0x00, 0x00, // mov eax, fs:[0x30]
-                    0xC3                                // ret
-                };
-            }
-
-            bufferCode = Marshal.AllocHGlobal(code.Length);
-            Marshal.Copy(code, 0, bufferCode, code.Length);
-
-            var functionPtr = (GetPebAddress)Marshal.GetDelegateForFunctionPointer(
-                bufferCode,
-                typeof(GetPebAddress));
-
-            if (!Win32Api.VirtualProtect(
-                bufferCode,
-                code.Length,
-                Win32Const.MemoryProtectionFlags.PAGE_EXECUTE_READ,
-                ref oldProtect))
-            {
-                Console.WriteLine("[-] Failed to VirtualProtect.");
-                Console.WriteLine("    |-> Error : {0}", Marshal.GetLastWin32Error());
-
-                return IntPtr.Zero;
-            }
-
-            peb = functionPtr();
-
-            if (!Win32Api.VirtualProtect(
-                bufferCode,
-                code.Length,
-                oldProtect,
-                ref oldProtect))
-            {
-                Console.WriteLine("[-] Failed to VirtualProtect.");
-                Console.WriteLine("    |-> Error : {0}", Marshal.GetLastWin32Error());
-
-                return IntPtr.Zero;
-            }
-
-            Marshal.FreeHGlobal(bufferCode);
-
-            if (Environment.Is64BitOperatingSystem)
-            {
-                Console.WriteLine("[*] PEB @ 0x{0}.", peb.ToString("X16"));
-            }
-            else
-            {
-                Console.WriteLine("[*] PEB @ 0x{0}.", peb.ToString("X8"));
-            }
-
-            if (Environment.Is64BitOperatingSystem)
-            {
-                pLdr = Marshal.ReadIntPtr(new IntPtr(peb.ToInt64() + 0x18));
-            }
-            else
-            {
-                pLdr = Marshal.ReadIntPtr(new IntPtr(peb.ToInt64() + 0x0C));
-            }
-
-            ldr = (PEB_LDR_DATA)Marshal.PtrToStructure(
-                    pLdr,
-                    typeof(PEB_LDR_DATA));
-            pLdrDataTableEntry = ldr.InLoadOrderModuleList.Flink;
-            entries.Add(pLdrDataTableEntry);
-
-            while (true)
-            {
-                ldrDataTableEntry = (LDR_DATA_TABLE_ENTRY)Marshal.PtrToStructure(
-                    pLdrDataTableEntry,
-                    typeof(LDR_DATA_TABLE_ENTRY));
-                pLdrDataTableEntry = ldrDataTableEntry.InLoadOrderLinks.Flink;
-
                 if (string.Compare(
-                    ldrDataTableEntry.BaseDllName.ToString(),
+                    Path.GetFileName(mod.FileName),
                     "ntdll.dll",
                     StringComparison.OrdinalIgnoreCase) == 0)
                 {
-                    return ldrDataTableEntry.DllBase;
+                    return mod.BaseAddress;
                 }
-
-                if (entries.Contains(pLdrDataTableEntry))
-                    break;
-                else
-                    entries.Add(pLdrDataTableEntry);
             }
 
             return IntPtr.Zero;
