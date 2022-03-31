@@ -14,7 +14,7 @@ namespace SyscallDumper.Library
             string delimiter;
             string numberString;
             string hexNumberString;
-            var maxNameLength = 16;
+            var maxNameLength = 12;
             var maxNumberLength = 6;
 
             foreach (var name in syscallTableModified.Keys)
@@ -77,18 +77,18 @@ namespace SyscallDumper.Library
             var result = new StringBuilder();
             string formatter;
             string delimiter;
-            var maxLength = 16;
+            var maxNameLength = 12;
 
             foreach (var name in syscallTable.Keys)
             {
-                if (name.Length > maxLength)
-                    maxLength = name.Length;
+                if (name.Length > maxNameLength)
+                    maxNameLength = name.Length;
             }
 
             formatter = string.Format(
                 "| {{0, -{0}}} | {{1, -6}} | {{2, -12}} |\n",
-                maxLength);
-            delimiter = string.Format("{0}\n", new string('-', 10 + 18 + maxLength));
+                maxNameLength);
+            delimiter = string.Format("{0}\n", new string('-', 10 + 18 + maxNameLength));
 
             result.Append(delimiter);
             result.Append(string.Format(
