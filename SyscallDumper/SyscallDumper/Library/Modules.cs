@@ -148,7 +148,7 @@ namespace SyscallDumper.Library
                 results.Append("################################################\n");
                 results.Append("#               MODIFIED SYSCALLS              #\n");
                 results.Append("################################################\n\n");;
-                results.Append(Helpers.BuildSyscallTableText(modified));
+                results.Append(Helpers.BuildModifiedSyscallTableText(oldTable, modified));
                 results.Append(string.Format(
                     "\n[*] Modified {0} syscall(s).\n",
                     modified.Count));

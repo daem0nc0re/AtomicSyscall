@@ -160,17 +160,17 @@ C:\Tools>SyscallDumper.exe -D C:\SyscallSamples\1809x64\ntdll.dll C:\SyscallSamp
 #               MODIFIED SYSCALLS              #
 ################################################
 
-----------------------------------------------------------------
-| Syscall Name                         | Number | Number (hex) |
-----------------------------------------------------------------
-| NtCreateDebugObject                  | 161    | 0x00A1       |
-| NtCreateDirectoryObject              | 162    | 0x00A2       |
+------------------------------------------------------------------------
+| Syscall Name                         | Number     | Number (hex)     |
+------------------------------------------------------------------------
+| NtCreateDebugObject                  | 160 -> 161 | 0x00A0 -> 0x00A1 |
+| NtCreateDirectoryObject              | 161 -> 162 | 0x00A1 -> 0x00A2 |
 
 --snip--
 
-| NtWaitHighEventPair                  | 462    | 0x01CE       |
-| NtWaitLowEventPair                   | 463    | 0x01CF       |
-----------------------------------------------------------------
+| NtWaitHighEventPair                  | 461 -> 462 | 0x01CD -> 0x01CE |
+| NtWaitLowEventPair                   | 462 -> 463 | 0x01CE -> 0x01CF |
+------------------------------------------------------------------------
 
 [*] Modified 303 syscall(s).
 
@@ -196,7 +196,7 @@ C:\Tools>SyscallDumper.exe -D C:\SyscallSamples\1809x64\ntdll.dll C:\SyscallSamp
 [Project](./SyscallPoCs)
 
 The purpose of this project is to investigate how attackers resolve and execute Windows syscall.
-All PoCs are list kernel modules by `NtQuerySystemInformation` syscall.
+All PoCs try to list kernel modules by `NtQuerySystemInformation` syscall.
 
 | PoC Name | Description |
 | :--- | :--- |
@@ -238,7 +238,7 @@ Thanks for your research and blog posts:
 
 * Paul Laîné ([@am0nsec](https://twitter.com/am0nsec))
 
-* smelly__vx (@RtlMateusz)
+* smelly__vx ([@smelly__vx](https://twitter.com/smelly__vx))
 
 * reenz0h ([@sektor7net](https://twitter.com/sektor7net))
 
