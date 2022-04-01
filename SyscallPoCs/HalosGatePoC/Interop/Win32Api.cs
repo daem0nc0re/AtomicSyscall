@@ -19,13 +19,6 @@ namespace HalosGatePoC.Interop
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool FreeLibrary(IntPtr hLibModule);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool VirtualProtect(
-            IntPtr lpAddress,
-            int dwSize,
-            Win32Const.MemoryProtectionFlags flNewProtect,
-            ref Win32Const.MemoryProtectionFlags lpflOldProtect);
-
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
         public static extern IntPtr LoadLibrary(string lpFileName);
     }

@@ -8,7 +8,7 @@ namespace HalosGatePoC
 {
     class HalosGatePoC
     {
-        static void Main(string[] args)
+        static void Main()
         {
             Console.WriteLine("\n--[ Syscall PoC for Halo's Gate\n");
 
@@ -45,12 +45,10 @@ namespace HalosGatePoC
                 }
             }
 
-            if (!Syscall.Initialize(syscallTable))
-            {
-                Console.WriteLine("[-] Failed to dump syscall numbers.\n");
+            var syscall = new Syscall(syscallTable);
 
+            if (!syscall.IsInitialized())
                 return;
-            }
 
             /*
              * Enumerate Drivers
@@ -68,7 +66,7 @@ namespace HalosGatePoC
                 SystemInfoBuffer = Marshal.AllocHGlobal(SystemInfoLength);
                 Helpers.ZeroMemory(SystemInfoBuffer, SystemInfoLength);
 
-                ntstatus = Syscall.NtQuerySystemInformation(
+                ntstatus = syscall.NtQuerySystemInformation(
                     Win32Const.SYSTEM_INFORMATION_CLASS.SystemModuleInformation,
                     SystemInfoBuffer,
                     SystemInfoLength,
@@ -81,7 +79,7 @@ namespace HalosGatePoC
             if (ntstatus != STATUS_SUCCESS)
             {
                 Console.WriteLine("[-] Failed to get system information.");
-                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32StatusMessage(ntstatus, true));
             }
 
             int entryCount = Marshal.ReadInt32(SystemInfoBuffer);
@@ -115,6 +113,7 @@ namespace HalosGatePoC
             }
 
             Marshal.FreeHGlobal(SystemInfoBuffer);
+            syscall.Dispose();
 
             Console.WriteLine("\n[*] Done.\n");
         }

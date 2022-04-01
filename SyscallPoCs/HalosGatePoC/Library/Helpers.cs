@@ -7,7 +7,7 @@ namespace HalosGatePoC.Library
 {
     class Helpers
     {
-        public static string GetWin32ErrorMessage(int code, bool isNtStatus)
+        public static string GetWin32StatusMessage(int code, bool isNtStatus)
         {
             var message = new StringBuilder();
             var messageSize = 255;
@@ -41,12 +41,12 @@ namespace HalosGatePoC.Library
 
             if (ret == 0)
             {
-                return string.Format("[ERROR] Code 0x{0}", code.ToString("X8"));
+                return string.Format("[STATUS] Code 0x{0}", code.ToString("X8"));
             }
             else
             {
                 return string.Format(
-                    "[ERROR] Code 0x{0} : {1}",
+                    "[STATUS] Code 0x{0} : {1}",
                     code.ToString("X8"),
                     message.ToString().Trim());
             }

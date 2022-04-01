@@ -22,13 +22,12 @@ namespace PhysicalResolvePoC
                 return;
             }
 
-            if (!Syscall.Initialize(PhysicalResolve.DumpSyscallNumber(
-                @"C:\Windows\System32\ntdll.dll")))
-            {
-                Console.WriteLine("[-] Failed to dump syscall numbers.\n");
+            var syscallTable = PhysicalResolve.DumpSyscallNumber(
+                @"C:\Windows\System32\ntdll.dll");
+            var syscall = new Syscall(syscallTable);
 
+            if (!syscall.IsInitialized())
                 return;
-            }
 
             /*
              * Enumerate Drivers
@@ -46,7 +45,7 @@ namespace PhysicalResolvePoC
                 SystemInfoBuffer = Marshal.AllocHGlobal(SystemInfoLength);
                 Helpers.ZeroMemory(SystemInfoBuffer, SystemInfoLength);
 
-                ntstatus = Syscall.NtQuerySystemInformation(
+                ntstatus = syscall.NtQuerySystemInformation(
                     Win32Const.SYSTEM_INFORMATION_CLASS.SystemModuleInformation,
                     SystemInfoBuffer,
                     SystemInfoLength,
@@ -59,7 +58,7 @@ namespace PhysicalResolvePoC
             if (ntstatus != STATUS_SUCCESS)
             {
                 Console.WriteLine("[-] Failed to get system information.");
-                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
+                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32StatusMessage(ntstatus, true));
             }
 
             int entryCount = Marshal.ReadInt32(SystemInfoBuffer);
@@ -93,6 +92,7 @@ namespace PhysicalResolvePoC
             }
 
             Marshal.FreeHGlobal(SystemInfoBuffer);
+            syscall.Dispose();
 
             Console.WriteLine("\n[*] Done.\n");
         }

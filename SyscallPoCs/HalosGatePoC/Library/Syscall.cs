@@ -1,57 +1,112 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using HalosGatePoC.Interop;
 
 namespace HalosGatePoC.Library
 {
-    class Syscall
+    class Syscall : IDisposable
     {
         /*
          * Global Variables
          */
-        private static bool isInitialized = false;
-        private static IntPtr syscallStub;
-        private static byte[] syscallBytes;
-        private static Dictionary<string, int> syscallTable = new Dictionary<string, int>();
+        private IntPtr asmBuffer = IntPtr.Zero;
+        private readonly byte[] syscallBytes = new byte[] {
+            0x4C, 0x8B, 0xD1,             // mov r10, rcx
+            0xB8, 0x00, 0x00, 0x00, 0x00, // mov eax, 0x00 (patched with syscall number)
+            0x0F, 0x05,                   // syscall
+            0xC3                          // ret
+        };
+        private readonly Dictionary<string, int> syscallTable = new Dictionary<string, int>();
+        private readonly MemoryMappedFile memoryMap;
 
         /*
          * Helper Functions
          */
-        private static void SetSyscallBytes(int syscallNumber)
+        private bool SetSyscallBytes(int syscallNumber)
         {
-            byte b0 = (byte)(syscallNumber & 0xff);
-            byte b1 = (byte)((syscallNumber >> 8) & 0xff);
-            byte b2 = (byte)((syscallNumber >> 16) & 0xff);
-            byte b3 = (byte)((syscallNumber >> 24) & 0xff);
-
-            syscallBytes = new byte[] {
-                0x4C, 0x8B, 0xD1,     // mov r10, rcx
-                0xB8, b0, b1, b2, b3, // mov eax, syscall_number
-                0x0F, 0x05,           // syscall
-                0xC3                  // ret
-            };
-        }
-
-        public static bool Initialize(Dictionary<string, int> table)
-        {
-            if (table.Count > 0)
+            if (this.asmBuffer == IntPtr.Zero)
             {
-                syscallTable = table;
-                isInitialized = true;
+                Console.WriteLine("[-] Buffer for assembly code have not been allocated.");
+
+                return false;
+            }
+
+            this.syscallBytes[4] = (byte)(syscallNumber & 0xff);
+            this.syscallBytes[5] = (byte)((syscallNumber >> 8) & 0xff);
+            this.syscallBytes[6] = (byte)((syscallNumber >> 16) & 0xff);
+            this.syscallBytes[7] = (byte)((syscallNumber >> 24) & 0xff);
+
+            try
+            {
+                Marshal.Copy(this.syscallBytes, 0, this.asmBuffer, this.syscallBytes.Length);
 
                 return true;
             }
-            else
+            catch
             {
+                Console.WriteLine("[-] Failed to write assembly code for syscall.");
+
                 return false;
             }
         }
 
         /*
+         * Constructor and Destructor
+         */
+        public Syscall(Dictionary<string, int> table)
+        {
+            if (table.Count > 0)
+            {
+                this.syscallTable = table;
+                this.memoryMap = MemoryMappedFile.CreateNew(
+                    null,
+                    this.syscallBytes.Length,
+                    MemoryMappedFileAccess.ReadWriteExecute);
+                var accessor = memoryMap.CreateViewAccessor(
+                    0,
+                    this.syscallBytes.Length,
+                    MemoryMappedFileAccess.ReadWriteExecute);
+                this.asmBuffer = accessor.SafeMemoryMappedViewHandle.DangerousGetHandle();
+
+                if (this.asmBuffer == IntPtr.Zero)
+                {
+                    Console.WriteLine("[-] Failed to allocate memory for assembly code.");
+
+                    return;
+                }
+
+                return;
+            }
+            else
+            {
+                Console.WriteLine("[-] Input table has no entries.");
+
+                return;
+            }
+        }
+
+
+        public void Dispose()
+        {
+            memoryMap.Dispose();
+            this.asmBuffer = IntPtr.Zero;
+        }
+
+        /*
+         * Helpers
+         */
+        public bool IsInitialized()
+        {
+            return this.asmBuffer != IntPtr.Zero;
+        }
+
+
+        /*
          * Syscalls
          */
-        public static int NtQuerySystemInformation(
+        public int NtQuerySystemInformation(
             Win32Const.SYSTEM_INFORMATION_CLASS SystemInformationClass,
             IntPtr SystemInformation,
             int SystemInformationLength,
@@ -59,18 +114,17 @@ namespace HalosGatePoC.Library
         {
             int ntstatus;
             string nameSyscall = "NtQuerySystemInformation";
-            Win32Const.MemoryProtectionFlags oldProtect = 0;
             int numSyscall;
 
             Console.WriteLine("[>] Calling {0} syscall.", nameSyscall);
 
-            if (!isInitialized || syscallTable.Count == 0)
+            if (this.asmBuffer == IntPtr.Zero || this.syscallTable.Count == 0)
             {
                 Console.WriteLine("[-] Syscall table is not initialized.\n", nameSyscall);
 
                 return -1;
             }
-            else if (!syscallTable.ContainsKey(nameSyscall))
+            else if (!this.syscallTable.ContainsKey(nameSyscall))
             {
                 Console.WriteLine("[-] Failed to resolve {0}.\n", nameSyscall);
 
@@ -87,23 +141,9 @@ namespace HalosGatePoC.Library
 
             SetSyscallBytes(numSyscall);
 
-            syscallStub = Marshal.AllocHGlobal(syscallBytes.Length);
-            Marshal.Copy(syscallBytes, 0, syscallStub, syscallBytes.Length);
-
             var syscall = (Win32Delegate.NtQuerySystemInformation)Marshal.GetDelegateForFunctionPointer(
-                syscallStub,
+                this.asmBuffer,
                 typeof(Win32Delegate.NtQuerySystemInformation));
-
-            if (!Win32Api.VirtualProtect(
-                syscallStub,
-                syscallBytes.Length,
-                Win32Const.MemoryProtectionFlags.PAGE_EXECUTE_READ,
-                ref oldProtect))
-            {
-                Console.WriteLine("[-] Failed to change memory protection.\n");
-
-                return Marshal.GetLastWin32Error();
-            }
 
             ntstatus = syscall(
                 SystemInformationClass,
@@ -111,22 +151,8 @@ namespace HalosGatePoC.Library
                 SystemInformationLength,
                 ref ReturnLength);
 
-            if (!Win32Api.VirtualProtect(
-                syscallStub,
-                syscallBytes.Length,
-                oldProtect,
-                ref oldProtect))
-            {
-                Console.WriteLine("[-] Failed to change memory protection.\n");
-
-                return Marshal.GetLastWin32Error();
-            }
-
-            Marshal.FreeHGlobal(syscallStub);
-            syscallStub = IntPtr.Zero;
-
             Console.WriteLine("[+] {0} is called successfully.", nameSyscall);
-            Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
+            Console.WriteLine("    |-> {0}", Helpers.GetWin32StatusMessage(ntstatus, true));
 
             return ntstatus;
         }
