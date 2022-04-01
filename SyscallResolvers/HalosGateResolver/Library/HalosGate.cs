@@ -588,9 +588,9 @@ namespace HalosGateResolver.Library
                     pBaseAddress = entry.Value;
 
                     if (Environment.Is64BitOperatingSystem)
-                        Console.WriteLine("[+] {0} @ 0x{0}", syscallName, pBaseAddress.ToString("X16"));
+                        Console.WriteLine("[+] {0} @ 0x{1}", syscallName, pBaseAddress.ToString("X16"));
                     else
-                        Console.WriteLine("[+] {0} @ 0x{0}", syscallName, pBaseAddress.ToString("X8"));
+                        Console.WriteLine("[+] {0} @ 0x{1}", syscallName, pBaseAddress.ToString("X8"));
                 }
             }
 
