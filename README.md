@@ -7,6 +7,7 @@ Tools and PoCs for Windows syscall investigation.
 - [AtomicSyscall](#atomicsyscall)
   - [SyscallDumper](#syscalldumper)
   - [SyscallPoCs](#syscallpocs)
+  - [SyscallResolvers](#syscallresolvers)
   - [Reference](#reference)
   - [Acknowledgments](#acknowledgments)
 
@@ -203,6 +204,26 @@ All PoCs try to list kernel modules by `NtQuerySystemInformation` syscall.
 | [PhysicalResolvePoC](./SyscallPoCs/PhysicalResolvePoC) | This PoC simply resolves the syscall numbers of `NtQuerySystemInformation` from `C:\Windows\System32\ntdll.dll`. |
 | [HellsGatePoC](./SyscallPoCs/HellsGatePoC) | This PoC resolves the syscall numbers of `NtQuerySystemInformation` by the Hell's Gate technique. |
 | [HalosGatePoC](./SyscallPoCs/HalosGatePoC) | This PoC resolves the syscall numbers of `NtQuerySystemInformation` by the Halo's Gate technique. |
+
+
+## SyscallResolvers
+
+[Back to Top](#atomicsyscall)
+
+[Project](./SyscallResolvers)
+
+The purpose of this project is to help to learn how in-memory syscall number resolve techniques work:
+
+| PoC Name | Description |
+| :--- | :--- |
+| [HellsGateResolver](./SyscallResolvers/HellsGateResolver) | This PoC resolves the syscall numbers in ntdll.dll by the Hell's Gate technique. Not works for functions patched with anti-virus products. |
+| [HalosGateResolver](./SyscallResolvers/HalosGateResolver) | This PoC resolves the syscall numbers in ntdll.dll by the Halo's Gate technique. |
+
+The following figure shows the difference between Hell's Gate and Halo's Gate in anti-virus software installed environment.
+Hell's Gate technique does not work for patched `NtCreateProcessEx` function.
+On the other hand, Halo's Gate technique works for patched `NtCreateProcessEx` function:
+
+![syscallresolvers.png](./figures/syscallresolvers.png)
 
 
 ## Reference

@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31829.152
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HellsGateResolver", "HellsGateResolver\HellsGateResolver.csproj", "{06D46D81-7104-44BD-8DA8-CBF6F18CB27A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HalosGateResolver", "HalosGateResolver\HalosGateResolver.csproj", "{8540319A-E47D-42FB-B1AC-9D8815107805}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{06D46D81-7104-44BD-8DA8-CBF6F18CB27A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06D46D81-7104-44BD-8DA8-CBF6F18CB27A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06D46D81-7104-44BD-8DA8-CBF6F18CB27A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06D46D81-7104-44BD-8DA8-CBF6F18CB27A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8540319A-E47D-42FB-B1AC-9D8815107805}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8540319A-E47D-42FB-B1AC-9D8815107805}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8540319A-E47D-42FB-B1AC-9D8815107805}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8540319A-E47D-42FB-B1AC-9D8815107805}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {30B8170A-7FAF-47A9-A7D3-D6811B18B697}
+	EndGlobalSection
+EndGlobal
