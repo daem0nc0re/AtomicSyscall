@@ -10,12 +10,16 @@ namespace SyscallDumper.Library
             Dictionary<string, int> syscallTableModified)
         {
             var result = new StringBuilder();
+            var columnName = "Syscall Name";
+            var columnNumber = "Number";
+            var columnHexNumber = "Number (hex)";
             string formatter;
             string delimiter;
             string numberString;
             string hexNumberString;
-            var maxNameLength = 12;
-            var maxNumberLength = 6;
+            var maxNameLength = columnName.Length;
+            var maxNumberLength = columnNumber.Length;
+            var maxHexNumberLength = columnHexNumber.Length;
 
             foreach (var name in syscallTableModified.Keys)
             {
@@ -24,27 +28,36 @@ namespace SyscallDumper.Library
                     syscallTableBase[name],
                     syscallTableModified[name]);
 
+                hexNumberString = string.Format(
+                    "0x{0} -> 0x{1}",
+                    syscallTableBase[name].ToString("X4"),
+                    syscallTableModified[name].ToString("X4"));
+
                 if (name.Length > maxNameLength)
                     maxNameLength = name.Length;
 
                 if (numberString.Length > maxNumberLength)
                     maxNumberLength = numberString.Length;
+
+                if (hexNumberString.Length > maxHexNumberLength)
+                    maxHexNumberLength = hexNumberString.Length;
             }
 
             formatter = string.Format(
-                "| {{0, -{0}}} | {{1, -{1}}} | {{2, -16}} |\n",
+                "| {{0, -{0}}} | {{1, -{1}}} | {{2, -{2}}} |\n",
                 maxNameLength,
-                maxNumberLength);
+                maxNumberLength,
+                maxHexNumberLength);
             delimiter = string.Format(
                 "{0}\n",
-                new string('-', 10 + 16 + maxNumberLength + maxNameLength));
+                new string('-', 10+ maxNameLength + maxNumberLength + maxHexNumberLength));
 
             result.Append(delimiter);
             result.Append(string.Format(
                 formatter,
-                "Syscall Name",
-                "Number",
-                "Number (hex)"));
+                columnName,
+                columnNumber,
+                columnHexNumber));
             result.Append(delimiter);
 
             foreach (var name in syscallTableModified.Keys)
@@ -75,27 +88,52 @@ namespace SyscallDumper.Library
             Dictionary<string, int> syscallTable)
         {
             var result = new StringBuilder();
+            var columnName = "Syscall Name";
+            var columnNumber = "Number";
+            var columnHexNumber = "Number (hex)";
             string formatter;
             string delimiter;
-            var maxNameLength = 12;
+            string numberString;
+            string hexNumberString;
+            var maxNameLength = columnName.Length;
+            var maxNumberLength = columnNumber.Length;
+            var maxHexNumberLength = columnHexNumber.Length;
 
             foreach (var name in syscallTable.Keys)
             {
+                numberString = string.Format(
+                    "{0}",
+                    syscallTable[name]);
+
+                hexNumberString = string.Format(
+                    "0x{0}",
+                    syscallTable[name].ToString("X4"));
+
                 if (name.Length > maxNameLength)
                     maxNameLength = name.Length;
+
+                if (numberString.Length > maxNumberLength)
+                    maxNumberLength = numberString.Length;
+
+                if (hexNumberString.Length > maxHexNumberLength)
+                    maxHexNumberLength = hexNumberString.Length;
             }
 
             formatter = string.Format(
-                "| {{0, -{0}}} | {{1, -6}} | {{2, -12}} |\n",
-                maxNameLength);
-            delimiter = string.Format("{0}\n", new string('-', 10 + 18 + maxNameLength));
+                "| {{0, -{0}}} | {{1, -{1}}} | {{2, -{2}}} |\n",
+                maxNameLength,
+                maxNumberLength,
+                maxHexNumberLength);
+            delimiter = string.Format(
+                "{0}\n",
+                new string('-', 10 + maxNameLength + maxNumberLength + maxHexNumberLength));
 
             result.Append(delimiter);
             result.Append(string.Format(
                 formatter,
-                "Syscall Name",
-                "Number",
-                "Number (hex)"));
+                columnName,
+                columnNumber,
+                columnHexNumber));
             result.Append(delimiter);
 
             foreach (var entry in syscallTable)

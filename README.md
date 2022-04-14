@@ -141,52 +141,78 @@ c:\Tools>type result.txt
 To take difference between 2 DLL's syscall tables, use `-D` (`--diff`) option as follows:
 
 ```
-C:\Tools>SyscallDumper.exe -D C:\SyscallSamples\1809x64\ntdll.dll C:\SyscallSamples\1903x64\ntdll.dll
+C:\Tools>SyscallDumper.exe -D C:\dev\SyscallSamples\1809x64\win32u.dll C:\dev\SyscallSamples\1903x64\win32u.dll
 
 [>] Trying to take diff.
-    |-> Old File : C:\SyscallSamples\1809x64\ntdll.dll
-    |-> New File : C:\SyscallSamples\1903x64\ntdll.dll
-[>] Loading C:\SyscallSamples\1809x64\ntdll.dll.
-[+] C:\SyscallSamples\1809x64\ntdll.dll is loaded successfully.
+    |-> Old File : C:\dev\SyscallSamples\1809x64\win32u.dll
+    |-> New File : C:\dev\SyscallSamples\1903x64\win32u.dll
+[>] Loading C:\dev\SyscallSamples\1809x64\win32u.dll.
+[+] C:\dev\SyscallSamples\1809x64\win32u.dll is loaded successfully.
     |-> Architecture : x64
-    |-> Image Name   : ntdll.dll
-[+] Got 462 syscall(s).
-[>] Loading C:\SyscallSamples\1903x64\ntdll.dll.
-[+] C:\SyscallSamples\1903x64\ntdll.dll is loaded successfully.
+    |-> Image Name   : win32u.dll
+[+] Got 1242 syscall(s).
+[>] Loading C:\dev\SyscallSamples\1903x64\win32u.dll.
+[+] C:\dev\SyscallSamples\1903x64\win32u.dll is loaded successfully.
     |-> Architecture : x64
-    |-> Image Name   : ntdll.dll
-[+] Got 463 syscall(s).
+    |-> Image Name   : win32u.dll
+[+] Got 1258 syscall(s).
+
+################################################
+#               DELETED SYSCALLS               #
+################################################
+
+-------------------------------------------------------------------
+| Syscall Name                            | Number | Number (hex) |
+-------------------------------------------------------------------
+| NtDCompositionCreateSharedVisualHandle  | 4391   | 0x1127       |
+| NtGdiDdDDINetDispStopSessions           | 4608   | 0x1200       |
+| NtGdiDdDDISetDisplayPrivateDriverFormat | 4664   | 0x1238       |
+| NtMITCoreMsgKGetConnectionHandle        | 4907   | 0x132B       |
+| NtMITCoreMsgKSend                       | 4909   | 0x132D       |
+| NtMITSynthesizeMouseWheel               | 4919   | 0x1337       |
+| NtMITWaitForMultipleObjectsEx           | 4922   | 0x133A       |
+| NtUserGetPointerFrameArrivalTimes       | 5105   | 0x13F1       |
+-------------------------------------------------------------------
+
+[*] Deleted 8 syscall(s).
+
 
 ################################################
 #               MODIFIED SYSCALLS              #
 ################################################
 
-------------------------------------------------------------------------
-| Syscall Name                         | Number     | Number (hex)     |
-------------------------------------------------------------------------
-| NtCreateDebugObject                  | 160 -> 161 | 0x00A0 -> 0x00A1 |
-| NtCreateDirectoryObject              | 161 -> 162 | 0x00A1 -> 0x00A2 |
+----------------------------------------------------------------------------------------
+| Syscall Name                                       | Number       | Number (hex)     |
+----------------------------------------------------------------------------------------
+| NtDxgkEndTrackedWorkload                           | 4435 -> 4436 | 0x1153 -> 0x1154 |
+| NtDxgkGetAvailableTrackedWorkloadIndex             | 4436 -> 4437 | 0x1154 -> 0x1155 |
 
 --snip--
 
-| NtWaitHighEventPair                  | 461 -> 462 | 0x01CD -> 0x01CE |
-| NtWaitLowEventPair                   | 462 -> 463 | 0x01CE -> 0x01CF |
-------------------------------------------------------------------------
+| NtValidateCompositionSurfaceHandle                 | 5334 -> 5350 | 0x14D6 -> 0x14E6 |
+| NtVisualCaptureBits                                | 5335 -> 5351 | 0x14D7 -> 0x14E7 |
+----------------------------------------------------------------------------------------
 
-[*] Modified 303 syscall(s).
+[*] Modified 623 syscall(s).
 
 
 ################################################
 #                 NEW SYSCALLS                 #
 ################################################
 
-------------------------------------------------
-| Syscall Name         | Number | Number (hex) |
-------------------------------------------------
-| NtCreateCrossVmEvent | 160    | 0x00A0       |
-------------------------------------------------
+-----------------------------------------------------------------------------------
+| Syscall Name                                            | Number | Number (hex) |
+-----------------------------------------------------------------------------------
+| NtDCompositionCreateSharedResourceHandle                | 4391   | 0x1127       |
+| NtDxgkDispMgrOperation                                  | 4435   | 0x1153       |
 
-[*] Added 1 syscall(s).
+--snip--
+
+| NtUserSetMagnificationDesktopMagnifierOffsetsDWMUpdated | 5283   | 0x14A3       |
+| NtUserSetProcessMousewheelRoutingMode                   | 5293   | 0x14AD       |
+-----------------------------------------------------------------------------------
+
+[*] Added 24 syscall(s).
 ```
 
 
