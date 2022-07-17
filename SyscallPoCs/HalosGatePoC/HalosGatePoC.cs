@@ -79,7 +79,7 @@ namespace HalosGatePoC
             if (ntstatus != STATUS_SUCCESS)
             {
                 Console.WriteLine("[-] Failed to get system information.");
-                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32StatusMessage(ntstatus, true));
+                Console.WriteLine("    |-> {0}\n", Helpers.GetWin32ErrorMessage(ntstatus, true));
             }
 
             int entryCount = Marshal.ReadInt32(SystemInfoBuffer);

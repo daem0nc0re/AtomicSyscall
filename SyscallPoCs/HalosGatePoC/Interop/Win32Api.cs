@@ -15,11 +15,5 @@ namespace HalosGatePoC.Interop
             StringBuilder lpBuffer,
             int nSize,
             IntPtr Arguments);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        public static extern bool FreeLibrary(IntPtr hLibModule);
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
-        public static extern IntPtr LoadLibrary(string lpFileName);
     }
 }

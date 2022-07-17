@@ -152,7 +152,7 @@ namespace PhysicalResolvePoC.Library
                 ref ReturnLength);
 
             Console.WriteLine("[+] {0} is called successfully.", nameSyscall);
-            Console.WriteLine("    |-> {0}", Helpers.GetWin32StatusMessage(ntstatus, true));
+            Console.WriteLine("    |-> {0}", Helpers.GetWin32ErrorMessage(ntstatus, true));
 
             return ntstatus;
         }
