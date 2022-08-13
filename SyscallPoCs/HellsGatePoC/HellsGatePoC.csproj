@@ -4,12 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{5C048F2E-B060-4338-B023-880E9C85C93B}</ProjectGuid>
+    <ProjectGuid>{8F34AEB3-2FD4-447A-9B70-0204E0DA1ECE}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>HellsGatePoC</RootNamespace>
     <AssemblyName>HellsGatePoC</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -44,11 +45,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HellsGatePoC.cs" />
-    <Compile Include="Interop\Win32Api.cs" />
-    <Compile Include="Interop\Win32Const.cs" />
-    <Compile Include="Interop\Win32Delegate.cs" />
+    <Compile Include="Interop\NativeMethods.cs" />
+    <Compile Include="Interop\Win32Enum.cs" />
     <Compile Include="Interop\Win32Struct.cs" />
+    <Compile Include="HellsGatePoC.cs" />
     <Compile Include="Library\HellsGate.cs" />
     <Compile Include="Library\Helpers.cs" />
     <Compile Include="Library\Syscall.cs" />

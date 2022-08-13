@@ -7,12 +7,12 @@ using System.Text.RegularExpressions;
 
 namespace HellsGatePoC.Library
 {
-    class HellsGate
+    internal class HellsGate
     {
         /*
          * Definisions for PE header
          */
-        public enum DllCharacteristicsType : ushort
+        private enum DllCharacteristicsType : ushort
         {
             RES_0 = 0x0001,
             RES_1 = 0x0002,
@@ -29,13 +29,13 @@ namespace HellsGatePoC.Library
             IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE = 0x8000
         }
 
-        public enum MagicType : ushort
+        private enum MagicType : ushort
         {
             IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b,
             IMAGE_NT_OPTIONAL_HDR64_MAGIC = 0x20b
         }
 
-        public enum SubSystemType : ushort
+        private enum SubSystemType : ushort
         {
             IMAGE_SUBSYSTEM_UNKNOWN = 0,
             IMAGE_SUBSYSTEM_NATIVE = 1,
@@ -52,14 +52,14 @@ namespace HellsGatePoC.Library
 
         // Struct
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_DATA_DIRECTORY
+        private struct IMAGE_DATA_DIRECTORY
         {
             public uint VirtualAddress;
             public uint Size;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_DOS_HEADER
+        private struct IMAGE_DOS_HEADER
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
             public char[] e_magic;    // Magic number
@@ -96,7 +96,7 @@ namespace HellsGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_EXPORT_DIRECTORY
+        private struct IMAGE_EXPORT_DIRECTORY
         {
             public uint Characteristics;
             public uint TimeDateStamp;
@@ -112,7 +112,7 @@ namespace HellsGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_FILE_HEADER
+        private struct IMAGE_FILE_HEADER
         {
             public ushort Machine;
             public ushort NumberOfSections;
@@ -124,7 +124,7 @@ namespace HellsGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_OPTIONAL_HEADER32
+        private struct IMAGE_OPTIONAL_HEADER32
         {
             [FieldOffset(0)]
             public MagicType Magic;
@@ -267,7 +267,7 @@ namespace HellsGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_OPTIONAL_HEADER64
+        private struct IMAGE_OPTIONAL_HEADER64
         {
             [FieldOffset(0)]
             public MagicType Magic;
@@ -406,7 +406,7 @@ namespace HellsGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public struct IMAGE_NT_HEADERS32
+        private struct IMAGE_NT_HEADERS32
         {
             public int Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -414,7 +414,7 @@ namespace HellsGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public struct IMAGE_NT_HEADERS64
+        private struct IMAGE_NT_HEADERS64
         {
             public int Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -479,7 +479,7 @@ namespace HellsGatePoC.Library
             var dosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
                 hModule,
                 typeof(IMAGE_DOS_HEADER));
-            var pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew); 
+            var pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew);
             var arch = (ushort)Marshal.ReadInt16(new IntPtr(
                 pNtHeader.ToInt64() +
                 Marshal.SizeOf(typeof(int))));

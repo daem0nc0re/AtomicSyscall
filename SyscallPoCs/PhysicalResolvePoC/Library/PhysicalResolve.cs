@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace PhysicalResolvePoC.Library
 {
-    class PhysicalResolve
+    internal class PhysicalResolve
     {
         public static Dictionary<string, int> DumpSyscallNumber(
             string filePath)

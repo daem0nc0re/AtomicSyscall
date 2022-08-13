@@ -4,16 +4,23 @@ using System.Text;
 
 namespace HalosGatePoC.Interop
 {
-    class Win32Api
+    internal class NativeMethods
     {
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern int FormatMessage(
-            Win32Const.FormatMessageFlags dwFlags,
+            FormatMessageFlags dwFlags,
             IntPtr lpSource,
             int dwMessageId,
             int dwLanguageId,
             StringBuilder lpBuffer,
             int nSize,
             IntPtr Arguments);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate int NtQuerySystemInformation(
+            SYSTEM_INFORMATION_CLASS SystemInformationClass,
+            IntPtr SystemInformation,
+            int SystemInformationLength,
+            ref int ReturnLength);
     }
 }

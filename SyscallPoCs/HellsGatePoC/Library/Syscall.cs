@@ -6,7 +6,7 @@ using HellsGatePoC.Interop;
 
 namespace HellsGatePoC.Library
 {
-    class Syscall : IDisposable
+    internal class Syscall : IDisposable
     {
         /*
          * Global Variables
@@ -107,7 +107,7 @@ namespace HellsGatePoC.Library
          * Syscalls
          */
         public int NtQuerySystemInformation(
-            Win32Const.SYSTEM_INFORMATION_CLASS SystemInformationClass,
+            SYSTEM_INFORMATION_CLASS SystemInformationClass,
             IntPtr SystemInformation,
             int SystemInformationLength,
             ref int ReturnLength)
@@ -141,9 +141,9 @@ namespace HellsGatePoC.Library
 
             SetSyscallBytes(numSyscall);
 
-            var syscall = (Win32Delegate.NtQuerySystemInformation)Marshal.GetDelegateForFunctionPointer(
+            var syscall = (Win32Api.NtQuerySystemInformation)Marshal.GetDelegateForFunctionPointer(
                 this.asmBuffer,
-                typeof(Win32Delegate.NtQuerySystemInformation));
+                typeof(Win32Api.NtQuerySystemInformation));
 
             ntstatus = syscall(
                 SystemInformationClass,

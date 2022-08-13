@@ -7,12 +7,12 @@ using System.Text.RegularExpressions;
 
 namespace HalosGatePoC.Library
 {
-    class HalosGate
+    internal class HalosGate
     {
         /*
          * Definisions for PE header
          */
-        public enum DllCharacteristicsType : ushort
+        private enum DllCharacteristicsType : ushort
         {
             RES_0 = 0x0001,
             RES_1 = 0x0002,
@@ -29,13 +29,13 @@ namespace HalosGatePoC.Library
             IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE = 0x8000
         }
 
-        public enum MagicType : ushort
+        private enum MagicType : ushort
         {
             IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b,
             IMAGE_NT_OPTIONAL_HDR64_MAGIC = 0x20b
         }
 
-        public enum SubSystemType : ushort
+        private enum SubSystemType : ushort
         {
             IMAGE_SUBSYSTEM_UNKNOWN = 0,
             IMAGE_SUBSYSTEM_NATIVE = 1,
@@ -52,14 +52,14 @@ namespace HalosGatePoC.Library
 
         // Struct
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_DATA_DIRECTORY
+        private struct IMAGE_DATA_DIRECTORY
         {
             public uint VirtualAddress;
             public uint Size;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_DOS_HEADER
+        private struct IMAGE_DOS_HEADER
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
             public char[] e_magic;    // Magic number
@@ -96,7 +96,7 @@ namespace HalosGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_EXPORT_DIRECTORY
+        private struct IMAGE_EXPORT_DIRECTORY
         {
             public uint Characteristics;
             public uint TimeDateStamp;
@@ -112,7 +112,7 @@ namespace HalosGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_FILE_HEADER
+        private struct IMAGE_FILE_HEADER
         {
             public ushort Machine;
             public ushort NumberOfSections;
@@ -124,7 +124,7 @@ namespace HalosGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_OPTIONAL_HEADER32
+        private struct IMAGE_OPTIONAL_HEADER32
         {
             [FieldOffset(0)]
             public MagicType Magic;
@@ -267,7 +267,7 @@ namespace HalosGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_OPTIONAL_HEADER64
+        private struct IMAGE_OPTIONAL_HEADER64
         {
             [FieldOffset(0)]
             public MagicType Magic;
@@ -406,7 +406,7 @@ namespace HalosGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public struct IMAGE_NT_HEADERS32
+        private struct IMAGE_NT_HEADERS32
         {
             public int Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -414,7 +414,7 @@ namespace HalosGatePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public struct IMAGE_NT_HEADERS64
+        private struct IMAGE_NT_HEADERS64
         {
             public int Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -429,38 +429,6 @@ namespace HalosGatePoC.Library
         /*
          * Functions
          */
-        private static IntPtr[] SearchBytes(
-            IntPtr basePointer,
-            int range,
-            byte[] searchBytes)
-        {
-            var results = new List<IntPtr>();
-            IntPtr pointer;
-            IntPtr offsetPointer;
-            bool found;
-
-            for (var count = 0; count < (range - searchBytes.Length); count++)
-            {
-                found = false;
-                pointer = new IntPtr(basePointer.ToInt64() + count);
-
-                for (var position = 0; position < searchBytes.Length; position++)
-                {
-                    offsetPointer = new IntPtr(pointer.ToInt64() + position);
-                    found = (Marshal.ReadByte(offsetPointer) == searchBytes[position]);
-
-                    if (!found)
-                        break;
-                }
-
-                if (found)
-                    results.Add(pointer);
-            }
-
-            return results.ToArray();
-        }
-
-
         private static Dictionary<string, IntPtr> ListNtFunctionTableFromNtdll()
         {
             uint rvaExportDirectory;
@@ -484,7 +452,7 @@ namespace HalosGatePoC.Library
             var dosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
                 hModule,
                 typeof(IMAGE_DOS_HEADER));
-            var pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew); 
+            var pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew);
             var arch = (ushort)Marshal.ReadInt16(new IntPtr(
                 pNtHeader.ToInt64() +
                 Marshal.SizeOf(typeof(int))));
@@ -565,7 +533,7 @@ namespace HalosGatePoC.Library
         {
             var results = new Dictionary<string, int>();
             IntPtr pBaseAddress;
-            
+
             if (functionTable.Count == 0)
             {
                 functionTable = ListNtFunctionTableFromNtdll();

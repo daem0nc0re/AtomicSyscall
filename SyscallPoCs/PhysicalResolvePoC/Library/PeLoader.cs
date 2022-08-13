@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 
 namespace PhysicalResolvePoC.Library
 {
-    class PeLoader : IDisposable
+    internal class PeLoader : IDisposable
     {
         // Windows Definition
         // Enum
-        public enum DllCharacteristicsType : ushort
+        private enum DllCharacteristicsType : ushort
         {
             RES_0 = 0x0001,
             RES_1 = 0x0002,
@@ -26,14 +26,14 @@ namespace PhysicalResolvePoC.Library
             IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE = 0x8000
         }
 
-        public enum MagicType : ushort
+        private enum MagicType : ushort
         {
             IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b,
             IMAGE_NT_OPTIONAL_HDR64_MAGIC = 0x20b
         }
 
         [Flags]
-        public enum SectionFlags : uint
+        private enum SectionFlags : uint
         {
             TYPE_NO_PAD = 0x00000008,
             CNT_CODE = 0x00000020,
@@ -74,7 +74,7 @@ namespace PhysicalResolvePoC.Library
             MEM_WRITE = 0x80000000
         }
 
-        public enum SubSystemType : ushort
+        private enum SubSystemType : ushort
         {
             IMAGE_SUBSYSTEM_UNKNOWN = 0,
             IMAGE_SUBSYSTEM_NATIVE = 1,
@@ -91,14 +91,14 @@ namespace PhysicalResolvePoC.Library
 
         // Struct
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_DATA_DIRECTORY
+        private struct IMAGE_DATA_DIRECTORY
         {
             public uint VirtualAddress;
             public uint Size;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_DOS_HEADER
+        private struct IMAGE_DOS_HEADER
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
             public char[] e_magic;    // Magic number
@@ -135,7 +135,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_EXPORT_DIRECTORY
+        private struct IMAGE_EXPORT_DIRECTORY
         {
             public uint Characteristics;
             public uint TimeDateStamp;
@@ -151,7 +151,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_FILE_HEADER
+        private struct IMAGE_FILE_HEADER
         {
             public ushort Machine;
             public ushort NumberOfSections;
@@ -163,7 +163,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_OPTIONAL_HEADER32
+        private struct IMAGE_OPTIONAL_HEADER32
         {
             [FieldOffset(0)]
             public MagicType Magic;
@@ -306,7 +306,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_OPTIONAL_HEADER64
+        private struct IMAGE_OPTIONAL_HEADER64
         {
             [FieldOffset(0)]
             public MagicType Magic;
@@ -445,7 +445,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public struct IMAGE_NT_HEADERS32
+        private struct IMAGE_NT_HEADERS32
         {
             public int Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -453,7 +453,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        public struct IMAGE_NT_HEADERS64
+        private struct IMAGE_NT_HEADERS64
         {
             public int Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -461,7 +461,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct IMAGE_SECTION_HEADER
+        private struct IMAGE_SECTION_HEADER
         {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 8)]
             public string Name;
@@ -500,7 +500,7 @@ namespace PhysicalResolvePoC.Library
 
                 throw new InvalidDataException(string.Format(
                     "Failed to get DOS Header from \"{0}\".", _filePath));
-            }   
+            }
 
             IntPtr lpNtHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew);
             ushort arch = (ushort)Marshal.ReadInt16(

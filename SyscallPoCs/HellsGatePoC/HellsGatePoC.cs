@@ -6,7 +6,7 @@ using HellsGatePoC.Library;
 
 namespace HellsGatePoC
 {
-    class HellsGatePoC
+    internal class HellsGatePoC
     {
         static void Main()
         {
@@ -45,7 +45,7 @@ namespace HellsGatePoC
                 Helpers.ZeroMemory(SystemInfoBuffer, SystemInfoLength);
 
                 ntstatus = syscall.NtQuerySystemInformation(
-                    Win32Const.SYSTEM_INFORMATION_CLASS.SystemModuleInformation,
+                    SYSTEM_INFORMATION_CLASS.SystemModuleInformation,
                     SystemInfoBuffer,
                     SystemInfoLength,
                     ref SystemInfoLength);
@@ -61,7 +61,7 @@ namespace HellsGatePoC
             }
 
             int entryCount = Marshal.ReadInt32(SystemInfoBuffer);
-            var entry = new Win32Struct.SYSTEM_MODULE_INFORMATION();
+            var entry = new SYSTEM_MODULE_INFORMATION();
             int sizeEntry = Marshal.SizeOf(entry);
             IntPtr offsetBuffer = new IntPtr(SystemInfoBuffer.ToInt64() + IntPtr.Size);
 
@@ -77,9 +77,9 @@ namespace HellsGatePoC
 
             for (var idx = 0; idx < entryCount; idx++)
             {
-                entry = (Win32Struct.SYSTEM_MODULE_INFORMATION)Marshal.PtrToStructure(
+                entry = (SYSTEM_MODULE_INFORMATION)Marshal.PtrToStructure(
                     offsetBuffer,
-                    typeof(Win32Struct.SYSTEM_MODULE_INFORMATION));
+                    typeof(SYSTEM_MODULE_INFORMATION));
 
                 Console.WriteLine(
                     "{0,5} 0x{1,-16} {2}",

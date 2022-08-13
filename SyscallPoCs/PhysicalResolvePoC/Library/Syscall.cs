@@ -6,7 +6,7 @@ using PhysicalResolvePoC.Interop;
 
 namespace PhysicalResolvePoC.Library
 {
-    class Syscall : IDisposable
+    internal class Syscall : IDisposable
     {
         /*
          * Global Variables
@@ -107,7 +107,7 @@ namespace PhysicalResolvePoC.Library
          * Syscalls
          */
         public int NtQuerySystemInformation(
-            Win32Const.SYSTEM_INFORMATION_CLASS SystemInformationClass,
+            SYSTEM_INFORMATION_CLASS SystemInformationClass,
             IntPtr SystemInformation,
             int SystemInformationLength,
             ref int ReturnLength)
@@ -141,9 +141,9 @@ namespace PhysicalResolvePoC.Library
 
             SetSyscallBytes(numSyscall);
 
-            var syscall = (Win32Delegate.NtQuerySystemInformation)Marshal.GetDelegateForFunctionPointer(
+            var syscall = (NativeMethods.NtQuerySystemInformation)Marshal.GetDelegateForFunctionPointer(
                 this.asmBuffer,
-                typeof(Win32Delegate.NtQuerySystemInformation));
+                typeof(NativeMethods.NtQuerySystemInformation));
 
             ntstatus = syscall(
                 SystemInformationClass,

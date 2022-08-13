@@ -46,11 +46,11 @@ namespace PhysicalResolvePoC
                 Helpers.ZeroMemory(SystemInfoBuffer, SystemInfoLength);
 
                 ntstatus = syscall.NtQuerySystemInformation(
-                    Win32Const.SYSTEM_INFORMATION_CLASS.SystemModuleInformation,
+                    SYSTEM_INFORMATION_CLASS.SystemModuleInformation,
                     SystemInfoBuffer,
                     SystemInfoLength,
                     ref SystemInfoLength);
-                
+
                 if (ntstatus != STATUS_SUCCESS)
                     Marshal.FreeHGlobal(SystemInfoBuffer);
             } while (ntstatus == STATUS_INFO_LENGTH_MISMATCH);
@@ -62,7 +62,7 @@ namespace PhysicalResolvePoC
             }
 
             int entryCount = Marshal.ReadInt32(SystemInfoBuffer);
-            var entry = new Win32Struct.SYSTEM_MODULE_INFORMATION();
+            var entry = new SYSTEM_MODULE_INFORMATION();
             int sizeEntry = Marshal.SizeOf(entry);
             IntPtr offsetBuffer = new IntPtr(SystemInfoBuffer.ToInt64() + IntPtr.Size);
 
@@ -78,16 +78,16 @@ namespace PhysicalResolvePoC
 
             for (var idx = 0; idx < entryCount; idx++)
             {
-                entry = (Win32Struct.SYSTEM_MODULE_INFORMATION)Marshal.PtrToStructure(
+                entry = (SYSTEM_MODULE_INFORMATION)Marshal.PtrToStructure(
                     offsetBuffer,
-                    typeof(Win32Struct.SYSTEM_MODULE_INFORMATION));
+                    typeof(SYSTEM_MODULE_INFORMATION));
 
                 Console.WriteLine(
                     "{0,5} 0x{1,-16} {2}",
                     idx,
                     entry.ImageBase.ToString("X"),
                     Encoding.ASCII.GetString(entry.ImageName).Trim('\x00'));
-                
+
                 offsetBuffer = new IntPtr(offsetBuffer.ToInt64() + sizeEntry);
             }
 

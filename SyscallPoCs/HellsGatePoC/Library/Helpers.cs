@@ -7,13 +7,13 @@ using HellsGatePoC.Interop;
 
 namespace HellsGatePoC.Library
 {
-    class Helpers
+    internal class Helpers
     {
         public static string GetWin32ErrorMessage(int code, bool isNtStatus)
         {
             int nReturnedLength;
             ProcessModuleCollection modules;
-            Win32Const.FormatMessageFlags dwFlags;
+            FormatMessageFlags dwFlags;
             int nSizeMesssage = 256;
             var message = new StringBuilder(nSizeMesssage);
             IntPtr pNtdll = IntPtr.Zero;
@@ -34,12 +34,12 @@ namespace HellsGatePoC.Library
                     }
                 }
 
-                dwFlags = Win32Const.FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE |
-                    Win32Const.FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
+                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_HMODULE |
+                    FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
             }
             else
             {
-                dwFlags = Win32Const.FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
+                dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
             }
 
             nReturnedLength = Win32Api.FormatMessage(

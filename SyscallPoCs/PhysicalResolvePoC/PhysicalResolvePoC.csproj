@@ -4,12 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{AEBDD3FA-5AC0-465C-A6C3-0D30F95308B6}</ProjectGuid>
+    <ProjectGuid>{6F2256DC-121D-401C-9A93-4368F048E969}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>PhysicalResolvePoC</RootNamespace>
     <AssemblyName>PhysicalResolvePoC</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -44,20 +45,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interop\Win32Delegate.cs" />
-    <Compile Include="Interop\Win32Api.cs" />
-    <Compile Include="Interop\Win32Const.cs" />
+    <Compile Include="Interop\NativeMethods.cs" />
+    <Compile Include="Interop\Win32Enum.cs" />
     <Compile Include="Interop\Win32Struct.cs" />
     <Compile Include="Library\Helpers.cs" />
     <Compile Include="Library\PeLoader.cs" />
-    <Compile Include="Library\Syscall.cs" />
     <Compile Include="Library\PhysicalResolve.cs" />
+    <Compile Include="Library\Syscall.cs" />
     <Compile Include="PhysicalResolvePoC.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
