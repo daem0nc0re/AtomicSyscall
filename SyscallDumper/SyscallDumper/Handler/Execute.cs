@@ -4,7 +4,7 @@ using SyscallDumper.Library;
 
 namespace SyscallDumper.Handler
 {
-    class Execute
+    internal class Execute
     {
         public static void Run(CommandLineParser options)
         {

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace SyscallDumper.Library
 {
-    class Helpers
+    internal class Helpers
     {
         public static string BuildModifiedSyscallTableText(
             Dictionary<string, int> syscallTableBase,

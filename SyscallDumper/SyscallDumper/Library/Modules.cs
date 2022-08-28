@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SyscallDumper.Library
 {
-    class Modules
+    internal class Modules
     {
         private static Dictionary<string, int> FilterTable(
             Dictionary<string, int> syscallTable,

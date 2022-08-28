@@ -49,7 +49,7 @@
     <Compile Include="Handler\Execute.cs" />
     <Compile Include="Library\Helpers.cs" />
     <Compile Include="Library\Modules.cs" />
-    <Compile Include="Library\PeLoader.cs" />
+    <Compile Include="Library\PeFile.cs" />
     <Compile Include="Library\Utilities.cs" />
     <Compile Include="SyscallDumper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

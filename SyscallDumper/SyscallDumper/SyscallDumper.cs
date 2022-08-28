@@ -4,7 +4,7 @@ using SyscallDumper.Handler;
 
 namespace SyscallDumper
 {
-    class SyscallDumper
+    internal class SyscallDumper
     {
         static void Main(string[] args)
         {
