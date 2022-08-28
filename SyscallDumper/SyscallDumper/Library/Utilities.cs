@@ -41,7 +41,6 @@ namespace SyscallDumper.Library
                     if (imageName != "ntdll.dll" && imageName != "win32u.dll")
                     {
                         Console.WriteLine("[-] Loaded file is not ntdll.dll or win32u.dll.");
-                        pe.Dispose();
 
                         return results;
                     }
