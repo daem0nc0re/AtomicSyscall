@@ -14,7 +14,7 @@ namespace PhysicalResolvePoC.Library
             var rgx = new Regex(@"^Nt\S+$");
             var fullPath = Path.GetFullPath(filePath);
             IntPtr[] offsets;
-            PeLoader pe;
+            PeFile pe;
             string arch;
             string imageName;
             Dictionary<string, IntPtr> exports;
@@ -30,7 +30,7 @@ namespace PhysicalResolvePoC.Library
 
             try
             {
-                pe = new PeLoader(fullPath);
+                pe = new PeFile(fullPath);
             }
             catch (InvalidDataException ex)
             {

@@ -49,7 +49,7 @@
     <Compile Include="Interop\Win32Enum.cs" />
     <Compile Include="Interop\Win32Struct.cs" />
     <Compile Include="Library\Helpers.cs" />
-    <Compile Include="Library\PeLoader.cs" />
+    <Compile Include="Library\PeFile.cs" />
     <Compile Include="Library\PhysicalResolve.cs" />
     <Compile Include="Library\Syscall.cs" />
     <Compile Include="PhysicalResolvePoC.cs" />

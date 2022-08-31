@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 
 namespace PhysicalResolvePoC.Library
 {
-    internal class PeLoader : IDisposable
+    internal class PeFile : IDisposable
     {
         // Windows Definition
         // Enum
-        private enum DllCharacteristicsType : ushort
+        public enum DllCharacteristicsType : ushort
         {
             RES_0 = 0x0001,
             RES_1 = 0x0002,
@@ -26,14 +26,14 @@ namespace PhysicalResolvePoC.Library
             IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE = 0x8000
         }
 
-        private enum MagicType : ushort
+        public enum MagicType : ushort
         {
             IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b,
             IMAGE_NT_OPTIONAL_HDR64_MAGIC = 0x20b
         }
 
         [Flags]
-        private enum SectionFlags : uint
+        public enum SectionFlags : uint
         {
             TYPE_NO_PAD = 0x00000008,
             CNT_CODE = 0x00000020,
@@ -74,7 +74,7 @@ namespace PhysicalResolvePoC.Library
             MEM_WRITE = 0x80000000
         }
 
-        private enum SubSystemType : ushort
+        public enum SubSystemType : ushort
         {
             IMAGE_SUBSYSTEM_UNKNOWN = 0,
             IMAGE_SUBSYSTEM_NATIVE = 1,
@@ -91,14 +91,14 @@ namespace PhysicalResolvePoC.Library
 
         // Struct
         [StructLayout(LayoutKind.Sequential)]
-        private struct IMAGE_DATA_DIRECTORY
+        public struct IMAGE_DATA_DIRECTORY
         {
             public uint VirtualAddress;
             public uint Size;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct IMAGE_DOS_HEADER
+        public struct IMAGE_DOS_HEADER
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
             public char[] e_magic;    // Magic number
@@ -135,7 +135,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct IMAGE_EXPORT_DIRECTORY
+        public struct IMAGE_EXPORT_DIRECTORY
         {
             public uint Characteristics;
             public uint TimeDateStamp;
@@ -151,7 +151,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct IMAGE_FILE_HEADER
+        public struct IMAGE_FILE_HEADER
         {
             public ushort Machine;
             public ushort NumberOfSections;
@@ -163,7 +163,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        private struct IMAGE_OPTIONAL_HEADER32
+        public struct IMAGE_OPTIONAL_HEADER32
         {
             [FieldOffset(0)]
             public MagicType Magic;
@@ -306,7 +306,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        private struct IMAGE_OPTIONAL_HEADER64
+        public struct IMAGE_OPTIONAL_HEADER64
         {
             [FieldOffset(0)]
             public MagicType Magic;
@@ -445,7 +445,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        private struct IMAGE_NT_HEADERS32
+        public struct IMAGE_NT_HEADERS32
         {
             public int Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -453,7 +453,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
-        private struct IMAGE_NT_HEADERS64
+        public struct IMAGE_NT_HEADERS64
         {
             public int Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -461,7 +461,7 @@ namespace PhysicalResolvePoC.Library
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct IMAGE_SECTION_HEADER
+        public struct IMAGE_SECTION_HEADER
         {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 8)]
             public string Name;
@@ -486,20 +486,23 @@ namespace PhysicalResolvePoC.Library
         private readonly List<IMAGE_SECTION_HEADER> SectionHeaders;
 
         // Constructor
-        public PeLoader(string _filePath)
+        public PeFile(string _filePath)
         {
             this.Buffer = LoadFileData(_filePath, out this.SizeOfBuffer);
 
             if (this.Buffer == IntPtr.Zero)
                 throw new InvalidDataException(string.Format(
-                    "Failed to load \"{0}\".", _filePath));
+                    "Failed to load \"{0}\".",
+                    _filePath));
 
             if (!GetDosHeader(out this.DosHeader))
             {
                 Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
 
                 throw new InvalidDataException(string.Format(
-                    "Failed to get DOS Header from \"{0}\".", _filePath));
+                    "Failed to get DOS Header from \"{0}\".",
+                    _filePath));
             }
 
             IntPtr lpNtHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew);
@@ -526,17 +529,21 @@ namespace PhysicalResolvePoC.Library
             else
             {
                 Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
 
                 throw new InvalidDataException(string.Format(
-                    "Failed to get NT Header from \"{0}\" or unsupported architecture.", _filePath));
+                    "Failed to get NT Header from \"{0}\" or unsupported architecture.",
+                    _filePath));
             }
 
             if (!GetSectionHeaders(out this.SectionHeaders))
             {
                 Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
 
                 throw new InvalidDataException(string.Format(
-                    "Failed to get Section Headers from \"{0}\".", _filePath));
+                    "Failed to get Section Headers from \"{0}\".",
+                    _filePath));
             }
 
             var lastSection = this.SectionHeaders[this.SectionHeaders.Count - 1];
@@ -545,9 +552,76 @@ namespace PhysicalResolvePoC.Library
             if (this.SizeOfBuffer < boundary)
             {
                 Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
 
                 throw new InvalidDataException(string.Format(
-                    "Image size is invalid. \"{0}\" may be corrupted.", _filePath));
+                    "Image size is invalid. \"{0}\" may be corrupted.",
+                    _filePath));
+            }
+        }
+
+
+        public PeFile(byte[] data)
+        {
+            this.Buffer = LoadFileData(data, out this.SizeOfBuffer);
+
+            if (this.Buffer == IntPtr.Zero)
+                throw new InvalidDataException("Failed to load file data.");
+
+            if (!GetDosHeader(out this.DosHeader))
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException("Failed to get DOS Header from loaded data.");
+            }
+
+            IntPtr lpNtHeader = new IntPtr(this.Buffer.ToInt64() + this.DosHeader.e_lfanew);
+            ushort arch = (ushort)Marshal.ReadInt16(
+                lpNtHeader,
+                Marshal.SizeOf(typeof(int)));
+
+            if (arch == 0x8664)
+            {
+                this.Arch = "x64";
+                this.NtHeader32 = new IMAGE_NT_HEADERS32();
+                this.NtHeader64 = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(
+                    lpNtHeader,
+                    typeof(IMAGE_NT_HEADERS64));
+            }
+            else if (arch == 0x014C)
+            {
+                this.Arch = "x86";
+                this.NtHeader32 = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(
+                    lpNtHeader,
+                    typeof(IMAGE_NT_HEADERS32));
+                this.NtHeader64 = new IMAGE_NT_HEADERS64();
+            }
+            else
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException("Failed to get NT Header from loaded data or unsupported architecture.");
+            }
+
+            if (!GetSectionHeaders(out this.SectionHeaders))
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException("Failed to get Section Headers from loaded data.");
+            }
+
+            var lastSection = this.SectionHeaders[this.SectionHeaders.Count - 1];
+            var boundary = lastSection.PointerToRawData + lastSection.SizeOfRawData;
+
+            if (this.SizeOfBuffer < boundary)
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException("Image size is invalid. Loaded data may be corrupted.");
             }
         }
 
@@ -555,7 +629,8 @@ namespace PhysicalResolvePoC.Library
         // Destructor
         public void Dispose()
         {
-            Marshal.FreeHGlobal(this.Buffer);
+            if (this.Buffer != IntPtr.Zero)
+                Marshal.FreeHGlobal(this.Buffer);
         }
 
 
@@ -574,9 +649,27 @@ namespace PhysicalResolvePoC.Library
         }
 
 
+        public uint GetAddressOfEntryPoint()
+        {
+            if (this.Arch == "x86")
+                return this.NtHeader32.OptionalHeader.AddressOfEntryPoint;
+            else
+                return this.NtHeader64.OptionalHeader.AddressOfEntryPoint;
+        }
+
+
         public string GetArchitecture()
         {
             return this.Arch;
+        }
+
+
+        public uint GetBaseOfCode()
+        {
+            if (this.Arch == "x86")
+                return this.NtHeader32.OptionalHeader.BaseOfCode;
+            else
+                return this.NtHeader64.OptionalHeader.BaseOfCode;
         }
 
 
@@ -724,7 +817,13 @@ namespace PhysicalResolvePoC.Library
         }
 
 
-        public int GetImageSize()
+        public IntPtr GetDataPointer()
+        {
+            return this.Buffer;
+        }
+
+
+        public int GetDataSize()
         {
             return this.SizeOfBuffer;
         }
@@ -739,6 +838,18 @@ namespace PhysicalResolvePoC.Library
             }
 
             return IntPtr.Zero;
+        }
+
+
+        public SectionFlags GetSectionCharacteristics(string sectionName)
+        {
+            foreach (var header in this.SectionHeaders)
+            {
+                if (sectionName == header.Name)
+                    return header.Characteristics;
+            }
+
+            return 0u;
         }
 
 
@@ -778,12 +889,59 @@ namespace PhysicalResolvePoC.Library
         }
 
 
-        public uint GetSectionSize(string sectionName)
+        public string[] GetSectionNames()
+        {
+            var sectionNames = new List<string>();
+
+            foreach (var header in this.SectionHeaders)
+                sectionNames.Add(header.Name);
+
+            return sectionNames.ToArray();
+        }
+
+
+        public uint GetSectionPointerToRawData(string sectionName)
+        {
+            foreach (var header in this.SectionHeaders)
+            {
+                if (sectionName == header.Name)
+                    return header.PointerToRawData;
+            }
+
+            return 0u;
+        }
+
+
+        public uint GetSectionSizeOfRawData(string sectionName)
         {
             foreach (var header in this.SectionHeaders)
             {
                 if (sectionName == header.Name)
                     return header.SizeOfRawData;
+            }
+
+            return 0u;
+        }
+
+
+        public uint GetSectionVirtualAddress(string sectionName)
+        {
+            foreach (var header in this.SectionHeaders)
+            {
+                if (sectionName == header.Name)
+                    return header.VirtualAddress;
+            }
+
+            return 0u;
+        }
+
+
+        public uint GetSectionVirtualSize(string sectionName)
+        {
+            foreach (var header in this.SectionHeaders)
+            {
+                if (sectionName == header.Name)
+                    return header.VirtualSize;
             }
 
             return 0u;
@@ -802,8 +960,24 @@ namespace PhysicalResolvePoC.Library
             }
             else
             {
-                throw new InvalidDataException(string.Format(
-                    "Unsupported architecture is detected."));
+                throw new InvalidDataException("Unsupported architecture is detected.");
+            }
+        }
+
+
+        public uint GetSizeOfHeaders()
+        {
+            if (this.Arch == "x64")
+            {
+                return this.NtHeader64.OptionalHeader.SizeOfHeaders;
+            }
+            else if (this.Arch == "x86")
+            {
+                return this.NtHeader32.OptionalHeader.SizeOfHeaders;
+            }
+            else
+            {
+                throw new InvalidDataException("Unsupported architecture is detected.");
             }
         }
 
@@ -833,6 +1007,26 @@ namespace PhysicalResolvePoC.Library
             try
             {
                 byte[] data = File.ReadAllBytes(fullFilePath);
+                buffer = Marshal.AllocHGlobal(data.Length);
+                Marshal.Copy(data, 0, buffer, data.Length);
+                length = data.Length;
+
+                return buffer;
+            }
+            catch
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+
+        private IntPtr LoadFileData(byte[] data, out int length)
+        {
+            IntPtr buffer;
+            length = data.Length;
+
+            try
+            {
                 buffer = Marshal.AllocHGlobal(data.Length);
                 Marshal.Copy(data, 0, buffer, data.Length);
                 length = data.Length;
@@ -1038,6 +1232,65 @@ namespace PhysicalResolvePoC.Library
             }
 
             return results.ToArray();
+        }
+
+
+        public IntPtr SearchBytesFirst(
+            IntPtr basePointer,
+            uint range,
+            byte[] searchBytes)
+        {
+            IntPtr pointer;
+            bool found;
+
+            for (var count = 0; count < (range - searchBytes.Length); count++)
+            {
+                found = false;
+                pointer = new IntPtr(basePointer.ToInt64() + count);
+
+                for (var position = 0; position < searchBytes.Length; position++)
+                {
+                    found = (this.ReadByte(pointer, position) == searchBytes[position]);
+
+                    if (!found)
+                        break;
+                }
+
+                if (found)
+                    return pointer;
+            }
+
+            return IntPtr.Zero;
+        }
+
+
+        public IntPtr SearchBytesFirst(
+            IntPtr basePointer,
+            uint offset,
+            uint range,
+            byte[] searchBytes)
+        {
+            IntPtr pointer;
+            bool found;
+
+            for (var count = 0; count < (range - searchBytes.Length); count++)
+            {
+                found = false;
+                pointer = new IntPtr(basePointer.ToInt64() + offset + count);
+
+                for (var position = 0; position < searchBytes.Length; position++)
+                {
+                    found = (this.ReadByte(pointer, position) == searchBytes[position]);
+
+                    if (!found)
+                        break;
+                }
+
+                if (found)
+                    return pointer;
+            }
+
+            return IntPtr.Zero;
         }
     }
 }
