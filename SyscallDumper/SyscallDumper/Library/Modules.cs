@@ -11,25 +11,20 @@ namespace SyscallDumper.Library
             Dictionary<string, int> syscallTable,
             string filter)
         {
+            var comparison = StringComparison.OrdinalIgnoreCase;
             var filtered = new Dictionary<string, int>();
 
             foreach (var entry in syscallTable)
             {
-                if (entry.Key.IndexOf(
-                    filter,
-                    StringComparison.OrdinalIgnoreCase) >= 0)
-                {
+                if (entry.Key.IndexOf(filter, comparison) >= 0)
                     filtered.Add(entry.Key, entry.Value);
-                }
             }
 
             return filtered;
         }
 
 
-        public static string GetSyscallTable(
-            string filePath,
-            string filter)
+        public static string GetSyscallTable(string filePath, string filter)
         {
             var result = new StringBuilder();
             var fullPath = Path.GetFullPath(filePath);
@@ -61,10 +56,7 @@ namespace SyscallDumper.Library
         }
 
 
-        public static string GetDiffTable(
-            string oldFilePath,
-            string newFilePath,
-            string filter)
+        public static string GetDiffTable(string oldFilePath, string newFilePath, string filter)
         {
             var results = new StringBuilder();
             Dictionary<string, int> oldTable;
@@ -98,8 +90,8 @@ namespace SyscallDumper.Library
             }
 
             Console.WriteLine("[>] Trying to take diff.");
-            Console.WriteLine("    |-> Old File : {0}", oldFilePath);
-            Console.WriteLine("    |-> New File : {0}", newFilePath);
+            Console.WriteLine("    [*] Old File : {0}", oldFilePath);
+            Console.WriteLine("    [*] New File : {0}", newFilePath);
 
             oldTable = Utilities.DumpSyscallNumber(oldFilePath);
             newTable = Utilities.DumpSyscallNumber(newFilePath);
@@ -135,9 +127,7 @@ namespace SyscallDumper.Library
                 results.Append("#               DELETED SYSCALLS               #\n");
                 results.Append("################################################\n\n");
                 results.Append(Helpers.BuildSyscallTableText(deleted));
-                results.Append(string.Format(
-                    "\n[*] Deleted {0} syscall(s).\n",
-                    deleted.Count));
+                results.Append(string.Format("\n[*] Deleted {0} syscall(s).\n", deleted.Count));
             }
 
             if (modified.Count > 0)
@@ -149,9 +139,7 @@ namespace SyscallDumper.Library
                 results.Append("#               MODIFIED SYSCALLS              #\n");
                 results.Append("################################################\n\n");;
                 results.Append(Helpers.BuildModifiedSyscallTableText(oldTable, modified));
-                results.Append(string.Format(
-                    "\n[*] Modified {0} syscall(s).\n",
-                    modified.Count));
+                results.Append(string.Format("\n[*] Modified {0} syscall(s).\n", modified.Count));
             }
 
             if (added.Count > 0)
@@ -163,9 +151,7 @@ namespace SyscallDumper.Library
                 results.Append("#                 NEW SYSCALLS                 #\n");
                 results.Append("################################################\n\n");
                 results.Append(Helpers.BuildSyscallTableText(added));
-                results.Append(string.Format(
-                    "\n[*] Added {0} syscall(s).\n",
-                    added.Count));
+                results.Append(string.Format("\n[*] Added {0} syscall(s).\n", added.Count));
             }
 
             if (!string.IsNullOrEmpty(filter))

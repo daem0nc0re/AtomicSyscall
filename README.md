@@ -18,7 +18,7 @@ Tools and PoCs for Windows syscall investigation.
 
 [Project](./SyscallDumper)
 
-This tool is to dump Windows syscall from ntdll.dll or win32u.dll:
+This tool is to dump Windows syscall from `ntdll.dll` or `win32u.dll`:
 
 ```
 C:\Tools>SyscallDumper.exe
@@ -50,13 +50,13 @@ C:\Tools>SyscallDumper.exe -d
 [>] Dumping from system default ntdll.dll and win32u.dll.
 [>] Loading C:\Windows\System32\ntdll.dll.
 [+] C:\Windows\System32\ntdll.dll is loaded successfully.
-    |-> Architecture : x64
-    |-> Image Name   : ntdll.dll
+    [*] Architecture : AMD64
+    [*] Image Name   : ntdll.dll
 [+] Got 463 syscall(s).
 [>] Loading C:\Windows\System32\win32u.dll.
 [+] C:\Windows\System32\win32u.dll is loaded successfully.
-    |-> Architecture : x64
-    |-> Image Name   : win32u.dll
+    [*] Architecture : AMD64
+    [*] Image Name   : win32u.dll
 [+] Got 1258 syscall(s).
 
 [Syscall Table from C:\Windows\System32\ntdll.dll]
@@ -101,11 +101,11 @@ C:\Tools>SyscallDumper.exe -d C:\SyscallSamples\1809x64\ntdll.dll -f token -o re
 
 [>] Loading C:\SyscallSamples\1809x64\ntdll.dll.
 [+] C:\SyscallSamples\1809x64\ntdll.dll is loaded successfully.
-    |-> Architecture : x64
-    |-> Image Name   : ntdll.dll
+    [*] Architecture : AMD64
+    [*] Image Name   : ntdll.dll
 [+] Got 462 syscall(s).
 [>] Trying to save results.
-    |-> Output File Path : c:\Tools\result.txt
+    [*] Output File Path : c:\Tools\result.txt
 [+] Results are saved successfully.
 
 c:\Tools>type result.txt
@@ -144,17 +144,17 @@ To take difference between 2 DLL's syscall tables, use `-D` (`--diff`) option as
 C:\Tools>SyscallDumper.exe -D C:\dev\SyscallSamples\1809x64\win32u.dll C:\dev\SyscallSamples\1903x64\win32u.dll
 
 [>] Trying to take diff.
-    |-> Old File : C:\dev\SyscallSamples\1809x64\win32u.dll
-    |-> New File : C:\dev\SyscallSamples\1903x64\win32u.dll
+    [*] Old File : C:\dev\SyscallSamples\1809x64\win32u.dll
+    [*] New File : C:\dev\SyscallSamples\1903x64\win32u.dll
 [>] Loading C:\dev\SyscallSamples\1809x64\win32u.dll.
 [+] C:\dev\SyscallSamples\1809x64\win32u.dll is loaded successfully.
-    |-> Architecture : x64
-    |-> Image Name   : win32u.dll
+    [*] Architecture : AMD64
+    [*] Image Name   : win32u.dll
 [+] Got 1242 syscall(s).
 [>] Loading C:\dev\SyscallSamples\1903x64\win32u.dll.
 [+] C:\dev\SyscallSamples\1903x64\win32u.dll is loaded successfully.
-    |-> Architecture : x64
-    |-> Image Name   : win32u.dll
+    [*] Architecture : AMD64
+    [*] Image Name   : win32u.dll
 [+] Got 1258 syscall(s).
 
 ################################################

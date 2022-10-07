@@ -14,8 +14,8 @@ namespace SyscallDumper.Library
             var rgx = new Regex(@"^Nt\S+$");
             var fullPath = Path.GetFullPath(filePath);
             IntPtr[] offsets;
-            string arch;
             string imageName;
+            int syscallNumber;
             Dictionary<string, IntPtr> exports;
 
             if (!File.Exists(fullPath))
@@ -31,14 +31,14 @@ namespace SyscallDumper.Library
 
                 using (var pe = new PeFile(fullPath))
                 {
-                    arch = pe.GetArchitecture();
                     imageName = pe.GetExportImageName();
 
                     Console.WriteLine("[+] {0} is loaded successfully.", fullPath);
-                    Console.WriteLine("    |-> Architecture : {0}", arch);
-                    Console.WriteLine("    |-> Image Name   : {0}", imageName);
+                    Console.WriteLine("    [*] Architecture : {0}", pe.Architecture);
+                    Console.WriteLine("    [*] Image Name   : {0}", imageName);
 
-                    if (imageName != "ntdll.dll" && imageName != "win32u.dll")
+                    if (!Helpers.CompareStringIgnoreCase(imageName, "ntdll.dll") &&
+                        !Helpers.CompareStringIgnoreCase(imageName, "win32u.dll"))
                     {
                         Console.WriteLine("[-] Loaded file is not ntdll.dll or win32u.dll.");
 
@@ -52,7 +52,7 @@ namespace SyscallDumper.Library
                         if (!rgx.IsMatch(entry.Key))
                             continue;
 
-                        if (arch == "x64")
+                        if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.AMD64)
                         {
                             if (pe.SearchBytes(
                                 entry.Value,
@@ -66,11 +66,12 @@ namespace SyscallDumper.Library
 
                                 if (offsets.Length > 0)
                                 {
-                                    results.Add(entry.Key, pe.ReadInt32(offsets[0], 1));
+                                    syscallNumber = pe.ReadInt32(offsets[0], 1);
+                                    results.Add(entry.Key, syscallNumber);
                                 }
                             }
                         }
-                        else if (arch == "x86")
+                        else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.X86)
                         {
                             if (pe.SearchBytes(
                                 entry.Value,
@@ -84,9 +85,19 @@ namespace SyscallDumper.Library
 
                                 if (offsets.Length > 0)
                                 {
-                                    results.Add(entry.Key, pe.ReadInt32(offsets[0], 1));
+                                    syscallNumber = pe.ReadInt32(offsets[0], 1);
+                                    results.Add(entry.Key, syscallNumber);
                                 }
                             }
+                        }
+                        else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.ARM64)
+                        {
+                            syscallNumber = (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF; // svc #0x????;
+                            results.Add(entry.Key, syscallNumber);
+                        }
+                        else
+                        {
+                            throw new InvalidDataException("Unsupported architecture.");
                         }
                     }
                 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace SyscallDumper.Library
@@ -148,6 +149,13 @@ namespace SyscallDumper.Library
             result.Append(delimiter);
 
             return result.ToString();
+        }
+
+        public static bool CompareStringIgnoreCase(string stringA, string stringB)
+        {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
+            return (string.Compare(stringA, stringB, comparison) == 0);
         }
     }
 }
