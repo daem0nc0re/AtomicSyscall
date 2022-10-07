@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using SyscallDumper.Handler;
-using SyscallDumper.Library;
 
 namespace SyscallDumper
 {
