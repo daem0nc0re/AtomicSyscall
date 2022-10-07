@@ -776,9 +776,7 @@ namespace SyscallDumper.Library
             foreach (var section in this.SectionHeaders)
             {
                 if (rva < (section.VirtualAddress + section.SizeOfRawData))
-                {
                     return (rva - section.VirtualAddress + section.PointerToRawData);
-                }
             }
 
             return 0u;
