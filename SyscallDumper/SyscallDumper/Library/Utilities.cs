@@ -92,8 +92,12 @@ namespace SyscallDumper.Library
                         }
                         else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.ARM64)
                         {
-                            syscallNumber = (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF; // svc #0x????;
-                            results.Add(entry.Key, syscallNumber);
+                            if (((((uint)pe.ReadInt32(entry.Value) & 0xFFE0001F) ^ 0xD4000001) == 0) && // svc #0x????;
+                                ((uint)pe.ReadInt32(entry.Value, 4) == 0xD65F03C0))                     // ret;
+                            {
+                                syscallNumber = (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF;
+                                results.Add(entry.Key, syscallNumber);
+                            }
                         }
                         else
                         {
