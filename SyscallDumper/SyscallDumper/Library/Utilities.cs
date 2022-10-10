@@ -92,10 +92,10 @@ namespace SyscallDumper.Library
                         }
                         else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.ARM64)
                         {
-                            if (((((uint)pe.ReadInt32(entry.Value) & 0xFFE0001F) ^ 0xD4000001) == 0) && // svc #0x????;
-                                ((uint)pe.ReadInt32(entry.Value, 4) == 0xD65F03C0))                     // ret;
+                            if ((((pe.ReadUInt32(entry.Value) & 0xFFE0001F) ^ 0xD4000001) == 0) && // svc #0x????;
+                                (pe.ReadUInt32(entry.Value, 4) == 0xD65F03C0))                     // ret;
                             {
-                                syscallNumber = (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF;
+                                syscallNumber = (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF; // Decode svc instruction
                                 results.Add(entry.Key, syscallNumber);
                             }
                         }

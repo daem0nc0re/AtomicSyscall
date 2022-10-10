@@ -1339,6 +1339,84 @@ namespace SyscallDumper.Library
         }
 
 
+        public ushort ReadUInt16(IntPtr address)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return (ushort)Marshal.ReadInt16(pBuffer);
+        }
+
+
+        public ushort ReadUInt16(IntPtr address, int offset)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return (ushort)Marshal.ReadInt16(pBuffer);
+        }
+
+
+        public uint ReadUInt32(IntPtr address)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return (uint)Marshal.ReadInt32(pBuffer);
+        }
+
+
+        public uint ReadUInt32(IntPtr address, int offset)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return (uint)Marshal.ReadInt32(pBuffer);
+        }
+
+
+        public ulong ReadUInt64(IntPtr address)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
+
+            return (ulong)Marshal.ReadInt64(pBuffer);
+        }
+
+
+        public ulong ReadUInt64(IntPtr address, int offset)
+        {
+            IntPtr pBuffer;
+
+            if (Environment.Is64BitProcess)
+                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64() + offset);
+            else
+                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
+
+            return (ulong)Marshal.ReadInt64(pBuffer);
+        }
+
+
         public string ReadUnicodeString(IntPtr address)
         {
             IntPtr pBuffer;
