@@ -702,7 +702,7 @@ namespace SyscallDumper.Library
                     pDotNetHeader,
                     typeof(IMAGE_COR20_HEADER));
 
-                this.Is64Bit = (this.DotNetHeader.Flags == COMIMAGE_FLAGS.FLAG_ILONLY);
+                this.Is64Bit = (this.DotNetHeader.Flags == COMIMAGE_FLAGS.FLAG_ILONLY) && Environment.Is64BitOperatingSystem;
             }
             else
             {
@@ -847,7 +847,7 @@ namespace SyscallDumper.Library
                     pDotNetHeader,
                     typeof(IMAGE_COR20_HEADER));
 
-                this.Is64Bit = (this.DotNetHeader.Flags == COMIMAGE_FLAGS.FLAG_ILONLY);
+                this.Is64Bit = (this.DotNetHeader.Flags == COMIMAGE_FLAGS.FLAG_ILONLY) && Environment.Is64BitOperatingSystem;
             }
             else
             {
