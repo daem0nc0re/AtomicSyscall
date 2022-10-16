@@ -71,7 +71,7 @@ namespace SyscallDumper.Library
                                 }
                             }
                         }
-                        else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.X86)
+                        else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.I386)
                         {
                             if (pe.SearchBytes(
                                 entry.Value,

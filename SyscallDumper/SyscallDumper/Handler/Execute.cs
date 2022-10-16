@@ -57,7 +57,7 @@ namespace SyscallDumper.Handler
                     else
                     {
                         Console.WriteLine("[>] Trying to save results.");
-                        Console.WriteLine("    |-> Output File Path : {0}", output);
+                        Console.WriteLine("    [*] Output File Path : {0}", output);
 
                         try
                         {
@@ -88,7 +88,7 @@ namespace SyscallDumper.Handler
                     else
                     {
                         Console.WriteLine("[>] Trying to save results.");
-                        Console.WriteLine("    |-> Output File Path : {0}", output);
+                        Console.WriteLine("    [*] Output File Path : {0}", output);
 
                         try
                         {
@@ -134,7 +134,7 @@ namespace SyscallDumper.Handler
                 else
                 {
                     Console.WriteLine("[>] Trying to save results.");
-                    Console.WriteLine("    |-> Output File Path : {0}", output);
+                    Console.WriteLine("    [*] Output File Path : {0}", output);
 
                     try
                     {

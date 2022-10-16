@@ -10,6 +10,19 @@ namespace SyscallDumper.Library
         /*
          * Windows Definition : Enums
          */
+        [Flags]
+        public enum COMIMAGE_FLAGS : uint
+        {
+            FLAG_NONE = 0x00000000,
+            FLAG_ILONLY = 0x00000001,
+            FLAG_32BITREQUIRED = 0x00000002,
+            FLAG_IL_LIBRARY = 0x00000004,
+            FLAG_STRONGNAMESIGNED = 0x00000008,
+            FLAG_NATIVE_ENTRYPOINT = 0x00000010,
+            FLAG_TRACKDEBUGDATA = 0x00010000,
+            FLAG_32BITPREFERRED = 0x00020000
+        }
+
         public enum DllCharacteristicsType : ushort
         {
             RES_0 = 0x0001,
@@ -30,7 +43,7 @@ namespace SyscallDumper.Library
         public enum IMAGE_FILE_MACHINE : ushort
         {
             UNKNOWN = 0,
-            X86 = 0x014C, // I386
+            I386 = 0x014C,
             R3000BE = 0x0160,
             R3000LE = 0x0162,
             R4000 = 0x0166,
@@ -130,6 +143,23 @@ namespace SyscallDumper.Library
          * Windows Definition : Structs
          */
         [StructLayout(LayoutKind.Sequential)]
+        public struct IMAGE_COR20_HEADER
+        {
+            public uint cb;
+            public ushort MajorRuntimeVersion;
+            public ushort MinorRuntimeVersion;
+            public IMAGE_DATA_DIRECTORY MetaData;
+            public COMIMAGE_FLAGS Flags;
+            public uint EntryPointToken;
+            public IMAGE_DATA_DIRECTORY Resources;
+            public IMAGE_DATA_DIRECTORY StrongNameSignature;
+            public IMAGE_DATA_DIRECTORY CodeManagerTable;
+            public IMAGE_DATA_DIRECTORY VTableFixups;
+            public IMAGE_DATA_DIRECTORY ExportAddressTableJumps;
+            public IMAGE_DATA_DIRECTORY ManagedNativeHeader;
+        }
+
+            [StructLayout(LayoutKind.Sequential)]
         public struct IMAGE_DATA_DIRECTORY
         {
             public uint VirtualAddress;
@@ -519,6 +549,7 @@ namespace SyscallDumper.Library
          * Global Variables
          */
         public readonly bool Is64Bit;
+        public readonly bool IsDotNet;
         public readonly IMAGE_FILE_MACHINE Architecture;
         public readonly IntPtr Buffer;
         public readonly uint SizeOfBuffer;
@@ -526,6 +557,7 @@ namespace SyscallDumper.Library
         private readonly IMAGE_NT_HEADERS32 NtHeader32;
         private readonly IMAGE_NT_HEADERS64 NtHeader64;
         private readonly List<IMAGE_SECTION_HEADER> SectionHeaders;
+        private readonly IMAGE_COR20_HEADER DotNetHeader;
 
         /*
          * Constructor
@@ -533,11 +565,14 @@ namespace SyscallDumper.Library
         public PeFile(string _filePath)
         {
             IntPtr pNtHeader;
+            IntPtr pDotNetHeader;
             int nBitness;
             uint nSizeValidation;
             int nOffsetOfOptionalHeader;
-            IMAGE_SECTION_HEADER lastSection;
+            int nOffsetOfTextSection;
+            IMAGE_SECTION_HEADER lastSectionHeader;
             int nSizeOfSectionHeader = Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER));
+            int nSizeOfDotNetHeader = Marshal.SizeOf(typeof(IMAGE_COR20_HEADER));
 
             this.Buffer = this.LoadFileData(_filePath, out this.SizeOfBuffer);
 
@@ -633,8 +668,8 @@ namespace SyscallDumper.Library
                     _filePath));
             }
 
-            lastSection = this.SectionHeaders[this.SectionHeaders.Count - 1];
-            nSizeValidation = lastSection.PointerToRawData + lastSection.SizeOfRawData;
+            lastSectionHeader = this.SectionHeaders[this.SectionHeaders.Count - 1];
+            nSizeValidation = lastSectionHeader.PointerToRawData + lastSectionHeader.SizeOfRawData;
 
             if (this.SizeOfBuffer < nSizeValidation)
             {
@@ -643,17 +678,50 @@ namespace SyscallDumper.Library
 
                 throw new InvalidDataException(string.Format("File size of \"{0}\" is too small.", _filePath));
             }
+
+            nOffsetOfTextSection = (int)this.GetSectionPointerToRawData(".text");
+
+            if (nOffsetOfTextSection == 0)
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException(string.Format(".text section is not found from \"{0}\".", _filePath));
+            }
+
+            if (Environment.Is64BitProcess)
+                pDotNetHeader = new IntPtr(this.Buffer.ToInt64() + nOffsetOfTextSection + 8);
+            else
+                pDotNetHeader = new IntPtr(this.Buffer.ToInt32() + nOffsetOfTextSection + 8);
+
+            this.IsDotNet = (Marshal.ReadInt32(pDotNetHeader) == nSizeOfDotNetHeader);
+
+            if (this.IsDotNet)
+            {
+                this.DotNetHeader = (IMAGE_COR20_HEADER)Marshal.PtrToStructure(
+                    pDotNetHeader,
+                    typeof(IMAGE_COR20_HEADER));
+
+                this.Is64Bit = (this.DotNetHeader.Flags == COMIMAGE_FLAGS.FLAG_ILONLY);
+            }
+            else
+            {
+                this.DotNetHeader = new IMAGE_COR20_HEADER();
+            }
         }
 
 
         public PeFile(byte[] imageDataBytes)
         {
             IntPtr pNtHeader;
+            IntPtr pDotNetHeader;
             int nBitness;
             uint nSizeValidation;
             int nOffsetOfOptionalHeader;
-            IMAGE_SECTION_HEADER lastSection;
+            int nOffsetOfTextSection;
+            IMAGE_SECTION_HEADER lastSectionHeader;
             int nSizeOfSectionHeader = Marshal.SizeOf(typeof(IMAGE_SECTION_HEADER));
+            int nSizeOfDotNetHeader = Marshal.SizeOf(typeof(IMAGE_COR20_HEADER));
 
             this.Buffer = this.LoadFileData(imageDataBytes, out this.SizeOfBuffer);
 
@@ -745,8 +813,8 @@ namespace SyscallDumper.Library
                 throw new InvalidDataException("Failed to get Section Headers from loaded image data.");
             }
 
-            lastSection = this.SectionHeaders[this.SectionHeaders.Count - 1];
-            nSizeValidation = lastSection.PointerToRawData + lastSection.SizeOfRawData;
+            lastSectionHeader = this.SectionHeaders[this.SectionHeaders.Count - 1];
+            nSizeValidation = lastSectionHeader.PointerToRawData + lastSectionHeader.SizeOfRawData;
 
             if (this.SizeOfBuffer < nSizeValidation)
             {
@@ -754,6 +822,36 @@ namespace SyscallDumper.Library
                 this.Buffer = IntPtr.Zero;
 
                 throw new InvalidDataException("Loaded data size is too small.");
+            }
+
+            nOffsetOfTextSection = (int)this.GetSectionPointerToRawData(".text");
+
+            if (nOffsetOfTextSection == 0)
+            {
+                Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+
+                throw new InvalidDataException(".text section is not found from the loaded data.");
+            }
+
+            if (Environment.Is64BitProcess)
+                pDotNetHeader = new IntPtr(this.Buffer.ToInt64() + nOffsetOfTextSection + 8);
+            else
+                pDotNetHeader = new IntPtr(this.Buffer.ToInt32() + nOffsetOfTextSection + 8);
+
+            this.IsDotNet = (Marshal.ReadInt32(pDotNetHeader) == nSizeOfDotNetHeader);
+
+            if (this.IsDotNet)
+            {
+                this.DotNetHeader = (IMAGE_COR20_HEADER)Marshal.PtrToStructure(
+                    pDotNetHeader,
+                    typeof(IMAGE_COR20_HEADER));
+
+                this.Is64Bit = (this.DotNetHeader.Flags == COMIMAGE_FLAGS.FLAG_ILONLY);
+            }
+            else
+            {
+                this.DotNetHeader = new IMAGE_COR20_HEADER();
             }
         }
 
@@ -794,7 +892,7 @@ namespace SyscallDumper.Library
 
         private int GetArchitectureBitness(IMAGE_FILE_MACHINE arch)
         {
-            if (arch == IMAGE_FILE_MACHINE.X86)
+            if (arch == IMAGE_FILE_MACHINE.I386)
                 return 32;
             else if (arch == IMAGE_FILE_MACHINE.ARM)
                 return 32;
@@ -836,6 +934,15 @@ namespace SyscallDumper.Library
 
                 return false;
             }
+        }
+
+
+        public COMIMAGE_FLAGS GetComImageFlags()
+        {
+            if (this.IsDotNet)
+                return this.DotNetHeader.Flags;
+            else
+                return COMIMAGE_FLAGS.FLAG_NONE;
         }
 
 
