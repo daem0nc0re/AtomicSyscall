@@ -15,13 +15,6 @@ namespace PhysicalResolvePoC
             /*
              * Syscall Number Resolve
              */
-            if (!Environment.Is64BitOperatingSystem)
-            {
-                Console.WriteLine("[-] 32 bit OS is not supported.\n");
-
-                return;
-            }
-
             var syscallTable = PhysicalResolve.DumpSyscallNumber(
                 @"C:\Windows\System32\ntdll.dll");
             var syscall = new Syscall(syscallTable);

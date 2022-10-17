@@ -12,6 +12,15 @@ namespace PhysicalResolvePoC.Library
          * Global Variables
          */
         private IntPtr asmBuffer = IntPtr.Zero;
+        private short numberOfParameters = 0;
+        private readonly byte[] syscallBytesX86 = new byte[] {
+            0xB8, 0x00, 0x00, 0x00, 0x00, // mov eax, 0x00 (patched with syscall number)
+            0xE8, 0x03, 0x00, 0x00, 0x00, // call _syscall -|
+            0xC2, 0x00, 0x00,             // retn 0x??      | <-|
+            0x8B, 0xD4,                   // mov edx, esp <-|   |
+            0x0F, 0x34,                   // sysenter           |
+            0xC3                          // ret ---------------|
+        };
         private readonly byte[] syscallBytesX64 = new byte[] {
             0x4C, 0x8B, 0xD1,             // mov r10, rcx
             0xB8, 0x00, 0x00, 0x00, 0x00, // mov eax, 0x00 (patched with syscall number)
@@ -30,7 +39,6 @@ namespace PhysicalResolvePoC.Library
          */
         private bool SetSyscallBytes(int syscallNumber)
         {
-            byte[] syscallBytes;
             IntPtr pBufferToWrite;
             string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
 
@@ -43,22 +51,37 @@ namespace PhysicalResolvePoC.Library
 
             try
             {
-                if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+                if (Helpers.CompareStringIgnoreCase(architecture, "x86"))
                 {
-                    syscallBytes = this.syscallBytesX64;
+                    if (Environment.Is64BitProcess)
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 1);
+                    else
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 1);
 
+                    // Patch syscall number
+                    Marshal.WriteInt32(pBufferToWrite, syscallNumber);
+
+                    if (Environment.Is64BitProcess)
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 11);
+                    else
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 11);
+
+                    // Patch retn instruction's immediate value
+                    Marshal.WriteInt16(pBufferToWrite, (short)(numberOfParameters * 4));
+                }
+                else if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+                {
                     if (Environment.Is64BitProcess)
                         pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 4);
                     else
                         pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 4);
 
-                    Marshal.Copy(syscallBytes, 0, this.asmBuffer, syscallBytes.Length);
+                    // Patch syscall number
                     Marshal.WriteInt32(pBufferToWrite, syscallNumber);
                 }
                 else if (Helpers.CompareStringIgnoreCase(architecture, "ARM64"))
                 {
-                    syscallBytes = this.syscallBytesArm64;
-                    Marshal.Copy(syscallBytes, 0, this.asmBuffer, syscallBytes.Length);
+                    // Patch svc instruction
                     Marshal.WriteInt32(this.asmBuffer, (int)(0xD4000001 | (syscallNumber << 5)));
                 }
                 else
@@ -86,7 +109,11 @@ namespace PhysicalResolvePoC.Library
             byte[] syscallBytes;
             string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
 
-            if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+            if (Helpers.CompareStringIgnoreCase(architecture, "x86"))
+            {
+                syscallBytes = this.syscallBytesX86;
+            }
+            else if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
             {
                 syscallBytes = this.syscallBytesX64;
             }
@@ -115,19 +142,13 @@ namespace PhysicalResolvePoC.Library
                 this.asmBuffer = accessor.SafeMemoryMappedViewHandle.DangerousGetHandle();
 
                 if (this.asmBuffer == IntPtr.Zero)
-                {
                     Console.WriteLine("[-] Failed to allocate memory for assembly code.");
-
-                    return;
-                }
-
-                return;
+                else
+                    Marshal.Copy(syscallBytes, 0, this.asmBuffer, syscallBytes.Length);
             }
             else
             {
                 Console.WriteLine("[-] Input table has no entries.");
-
-                return;
             }
         }
 
@@ -157,8 +178,9 @@ namespace PhysicalResolvePoC.Library
             ref int ReturnLength)
         {
             int ntstatus;
-            string nameSyscall = "NtQuerySystemInformation";
             int numSyscall;
+            string nameSyscall = "NtQuerySystemInformation";
+            this.numberOfParameters = 4;
 
             Console.WriteLine("[>] Calling {0} syscall.", nameSyscall);
 

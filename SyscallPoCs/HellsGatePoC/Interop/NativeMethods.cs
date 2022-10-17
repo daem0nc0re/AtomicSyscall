@@ -4,7 +4,7 @@ using System.Text;
 
 namespace HellsGatePoC.Interop
 {
-    internal class Win32Api
+    internal class NativeMethods
     {
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern int FormatMessage(

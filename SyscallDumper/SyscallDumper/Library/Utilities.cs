@@ -13,7 +13,6 @@ namespace SyscallDumper.Library
             var results = new Dictionary<string, int>();
             var rgx = new Regex(@"^Nt\S+$");
             var fullPath = Path.GetFullPath(filePath);
-            IntPtr[] offsets;
             string imageName;
             int syscallNumber;
             Dictionary<string, IntPtr> exports;
@@ -52,48 +51,37 @@ namespace SyscallDumper.Library
                         if (!rgx.IsMatch(entry.Key))
                             continue;
 
-                        if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.AMD64)
-                        {
-                            if (pe.SearchBytes(
-                                entry.Value,
-                                0x20,
-                                new byte[] { 0x0F, 0x05 }).Length > 0) // syscall
-                            {
-                                offsets = pe.SearchBytes(
-                                    entry.Value,
-                                    0x8,
-                                    new byte[] { 0xB8 }); // mov eax, 0x????????
-
-                                if (offsets.Length > 0)
-                                {
-                                    syscallNumber = pe.ReadInt32(offsets[0], 1);
-                                    results.Add(entry.Key, syscallNumber);
-                                }
-                            }
-                        }
-                        else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.I386)
+                        if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.I386)
                         {
                             if (pe.SearchBytes(
                                 entry.Value,
                                 0x20,
                                 new byte[] { 0x0F, 0x34 }).Length > 0) // sysenter
                             {
-                                offsets = pe.SearchBytes(
-                                    entry.Value,
-                                    0x8,
-                                    new byte[] { 0xB8 });  // mov eax, 0x????????
-
-                                if (offsets.Length > 0)
+                                if (pe.ReadByte(entry.Value) == 0xB8) // mov eax, 0x????
                                 {
-                                    syscallNumber = pe.ReadInt32(offsets[0], 1);
+                                    syscallNumber = pe.ReadInt32(entry.Value, 1);
+                                    results.Add(entry.Key, syscallNumber);
+                                }
+                            }
+                        }
+                        else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.AMD64)
+                        {
+                            if (pe.SearchBytes(
+                                entry.Value,
+                                0x20,
+                                new byte[] { 0x0F, 0x05 }).Length > 0) // syscall
+                            {
+                                if ((uint)pe.ReadInt32(entry.Value) == 0xB8D18B4C) // mov r10, rcx; mov eax, 0x???? 
+                                {
+                                    syscallNumber = pe.ReadInt32(entry.Value, 4);
                                     results.Add(entry.Key, syscallNumber);
                                 }
                             }
                         }
                         else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.ARM64)
                         {
-                            if ((((pe.ReadUInt32(entry.Value) & 0xFFE0001F) ^ 0xD4000001) == 0) && // svc #0x????;
-                                (pe.ReadUInt32(entry.Value, 4) == 0xD65F03C0))                     // ret;
+                            if ((((uint)pe.ReadInt32(entry.Value) & 0xFFE0001F) ^ 0xD4000001) == 0) // svc #0x????
                             {
                                 syscallNumber = (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF; // Decode svc instruction
                                 results.Add(entry.Key, syscallNumber);

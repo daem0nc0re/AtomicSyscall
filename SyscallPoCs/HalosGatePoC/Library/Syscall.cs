@@ -12,11 +12,24 @@ namespace HalosGatePoC.Library
          * Global Variables
          */
         private IntPtr asmBuffer = IntPtr.Zero;
-        private readonly byte[] syscallBytes = new byte[] {
+        private short numberOfParameters = 0;
+        private readonly byte[] syscallBytesX86 = new byte[] {
+            0xB8, 0x00, 0x00, 0x00, 0x00, // mov eax, 0x00 (patched with syscall number)
+            0xE8, 0x03, 0x00, 0x00, 0x00, // call _syscall -|
+            0xC2, 0x00, 0x00,             // retn 0x??      | <-|
+            0x8B, 0xD4,                   // mov edx, esp <-|   |
+            0x0F, 0x34,                   // sysenter           |
+            0xC3                          // ret ---------------|
+        };
+        private readonly byte[] syscallBytesX64 = new byte[] {
             0x4C, 0x8B, 0xD1,             // mov r10, rcx
             0xB8, 0x00, 0x00, 0x00, 0x00, // mov eax, 0x00 (patched with syscall number)
             0x0F, 0x05,                   // syscall
             0xC3                          // ret
+        };
+        private readonly byte[] syscallBytesArm64 = new byte[] {
+            0x00, 0x00, 0x00, 0x00, // svc #0x??
+            0xC0, 0x03, 0x5F, 0xD6  // ret
         };
         private readonly Dictionary<string, int> syscallTable = new Dictionary<string, int>();
         private readonly MemoryMappedFile memoryMap;
@@ -26,6 +39,9 @@ namespace HalosGatePoC.Library
          */
         private bool SetSyscallBytes(int syscallNumber)
         {
+            IntPtr pBufferToWrite;
+            string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+
             if (this.asmBuffer == IntPtr.Zero)
             {
                 Console.WriteLine("[-] Buffer for assembly code have not been allocated.");
@@ -33,14 +49,47 @@ namespace HalosGatePoC.Library
                 return false;
             }
 
-            this.syscallBytes[4] = (byte)(syscallNumber & 0xff);
-            this.syscallBytes[5] = (byte)((syscallNumber >> 8) & 0xff);
-            this.syscallBytes[6] = (byte)((syscallNumber >> 16) & 0xff);
-            this.syscallBytes[7] = (byte)((syscallNumber >> 24) & 0xff);
-
             try
             {
-                Marshal.Copy(this.syscallBytes, 0, this.asmBuffer, this.syscallBytes.Length);
+                if (Helpers.CompareStringIgnoreCase(architecture, "x86"))
+                {
+                    if (Environment.Is64BitProcess)
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 1);
+                    else
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 1);
+
+                    // Patch syscall number
+                    Marshal.WriteInt32(pBufferToWrite, syscallNumber);
+
+                    if (Environment.Is64BitProcess)
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 11);
+                    else
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 11);
+
+                    // Patch retn instruction's immediate value
+                    Marshal.WriteInt16(pBufferToWrite, (short)(numberOfParameters * 4));
+                }
+                else if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+                {
+                    if (Environment.Is64BitProcess)
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 4);
+                    else
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 4);
+
+                    // Patch syscall number
+                    Marshal.WriteInt32(pBufferToWrite, syscallNumber);
+                }
+                else if (Helpers.CompareStringIgnoreCase(architecture, "ARM64"))
+                {
+                    // Patch svc instruction
+                    Marshal.WriteInt32(this.asmBuffer, (int)(0xD4000001 | (syscallNumber << 5)));
+                }
+                else
+                {
+                    Console.WriteLine("[-] Unsupported architecture.");
+
+                    return false;
+                }
 
                 return true;
             }
@@ -57,33 +106,49 @@ namespace HalosGatePoC.Library
          */
         public Syscall(Dictionary<string, int> table)
         {
+            byte[] syscallBytes;
+            string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+
+            if (Helpers.CompareStringIgnoreCase(architecture, "x86"))
+            {
+                syscallBytes = this.syscallBytesX86;
+            }
+            else if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+            {
+                syscallBytes = this.syscallBytesX64;
+            }
+            else if (Helpers.CompareStringIgnoreCase(architecture, "ARM64"))
+            {
+                syscallBytes = this.syscallBytesArm64;
+            }
+            else
+            {
+                Console.WriteLine("[-] Unsupported architecture.");
+
+                return;
+            }
+
             if (table.Count > 0)
             {
                 this.syscallTable = table;
                 this.memoryMap = MemoryMappedFile.CreateNew(
                     null,
-                    this.syscallBytes.Length,
+                    syscallBytes.Length,
                     MemoryMappedFileAccess.ReadWriteExecute);
                 var accessor = memoryMap.CreateViewAccessor(
                     0,
-                    this.syscallBytes.Length,
+                    syscallBytes.Length,
                     MemoryMappedFileAccess.ReadWriteExecute);
                 this.asmBuffer = accessor.SafeMemoryMappedViewHandle.DangerousGetHandle();
 
                 if (this.asmBuffer == IntPtr.Zero)
-                {
                     Console.WriteLine("[-] Failed to allocate memory for assembly code.");
-
-                    return;
-                }
-
-                return;
+                else
+                    Marshal.Copy(syscallBytes, 0, this.asmBuffer, syscallBytes.Length);
             }
             else
             {
                 Console.WriteLine("[-] Input table has no entries.");
-
-                return;
             }
         }
 
@@ -113,8 +178,9 @@ namespace HalosGatePoC.Library
             ref int ReturnLength)
         {
             int ntstatus;
-            string nameSyscall = "NtQuerySystemInformation";
             int numSyscall;
+            string nameSyscall = "NtQuerySystemInformation";
+            this.numberOfParameters = 4;
 
             Console.WriteLine("[>] Calling {0} syscall.", nameSyscall);
 
@@ -134,7 +200,7 @@ namespace HalosGatePoC.Library
             {
                 numSyscall = syscallTable[nameSyscall];
                 Console.WriteLine(
-                    "    |-> Syscall Number : {0} (0x{1})",
+                    "    [*] Syscall Number : {0} (0x{1})",
                     numSyscall,
                     numSyscall.ToString("X4"));
             }

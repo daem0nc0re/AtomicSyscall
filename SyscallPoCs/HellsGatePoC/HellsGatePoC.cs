@@ -15,13 +15,6 @@ namespace HellsGatePoC
             /*
              * Syscall Number Resolve
              */
-            if (!Environment.Is64BitOperatingSystem)
-            {
-                Console.WriteLine("[-] 32 bit OS is not supported.\n");
-
-                return;
-            }
-
             var syscallTable = HellsGate.DumpSyscallNumberFromNtdll();
             var syscall = new Syscall(syscallTable);
 

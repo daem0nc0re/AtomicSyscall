@@ -9,6 +9,14 @@ namespace HellsGatePoC.Library
 {
     internal class Helpers
     {
+        public static bool CompareStringIgnoreCase(string stringA, string stringB)
+        {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
+            return (string.Compare(stringA, stringB, comparison) == 0);
+        }
+
+
         public static string GetWin32ErrorMessage(int code, bool isNtStatus)
         {
             int nReturnedLength;
@@ -42,7 +50,7 @@ namespace HellsGatePoC.Library
                 dwFlags = FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM;
             }
 
-            nReturnedLength = Win32Api.FormatMessage(
+            nReturnedLength = NativeMethods.FormatMessage(
                 dwFlags,
                 pNtdll,
                 code,

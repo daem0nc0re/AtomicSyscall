@@ -29,6 +29,42 @@ namespace HalosGatePoC.Library
             IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE = 0x8000
         }
 
+        private enum IMAGE_FILE_MACHINE : ushort
+        {
+            UNKNOWN = 0,
+            I386 = 0x014C,
+            R3000BE = 0x0160,
+            R3000LE = 0x0162,
+            R4000 = 0x0166,
+            R10000 = 0x0168,
+            WCEMIPSV2 = 0x0169,
+            ALPHA = 0x0184,
+            SH3 = 0x01A2,
+            SH3DSP = 0x01A3,
+            SH3E = 0x01A4,
+            SH4 = 0x01A6,
+            SH5 = 0x01A8,
+            ARM = 0x01C0,
+            THUMB = 0x01C2,
+            ARM2 = 0x01C4,
+            AM33 = 0x01D3,
+            POWERPC = 0x01F0,
+            POWERPCFP = 0x01F1,
+            IA64 = 0x0200,
+            MIPS16 = 0x0266,
+            ALPHA64 = 0x0284,
+            MIPSFPU = 0x0366,
+            MIPSFPU16 = 0x0466,
+            AXP64 = 0x0284,
+            TRICORE = 0x0520,
+            CEF = 0x0CEF,
+            EBC = 0x0EBC,
+            AMD64 = 0x8664,
+            M32R = 0x9041,
+            ARM64 = 0xAA64,
+            CEE = 0xC0EE
+        }
+
         private enum MagicType : ushort
         {
             IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b,
@@ -114,7 +150,7 @@ namespace HalosGatePoC.Library
         [StructLayout(LayoutKind.Sequential)]
         private struct IMAGE_FILE_HEADER
         {
-            public ushort Machine;
+            public IMAGE_FILE_MACHINE Machine;
             public ushort NumberOfSections;
             public uint TimeDateStamp;
             public uint PointerToSymbolTable;
@@ -424,19 +460,37 @@ namespace HalosGatePoC.Library
         /*
          * Global Variable
          */
-        private static Dictionary<string, IntPtr> functionTable = new Dictionary<string, IntPtr>();
+        private static IMAGE_FILE_MACHINE g_Architecture = IMAGE_FILE_MACHINE.AMD64;
+        private static Dictionary<string, IntPtr> g_FunctionTable = new Dictionary<string, IntPtr>();
 
         /*
          * Functions
          */
         private static Dictionary<string, IntPtr> ListNtFunctionTableFromNtdll()
         {
+            IntPtr hModule;
+            IntPtr pNtHeader;
+            IntPtr pImageFileMachine;
+            IntPtr pExportDirectory;
+            IntPtr pExportName;
+            IntPtr pFunctionName;
+            IntPtr pFunction;
+            IntPtr pExportNames;
+            IntPtr pExportOrdinals;
+            IntPtr pExportFunctions;
+            short ordinal;
             uint rvaExportDirectory;
+            uint numNames;
+            string exportName;
+            string functionName;
+            IMAGE_DOS_HEADER dosHeader;
+            IMAGE_EXPORT_DIRECTORY exportDirectory;
+            var rgx = new Regex(@"^Nt\S+$");
             var results = new Dictionary<string, IntPtr>();
 
             Console.WriteLine("[>] Trying to find the base address of ntdll.dll.");
 
-            IntPtr hModule = SearchNtdllBase();
+            hModule = SearchNtdllBase();
 
             if (hModule == IntPtr.Zero)
             {
@@ -449,30 +503,48 @@ namespace HalosGatePoC.Library
                 Console.WriteLine("[+] ntdll.dll @ 0x{0}", hModule.ToString("X16"));
             }
 
-            var dosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
+            dosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
                 hModule,
                 typeof(IMAGE_DOS_HEADER));
-            var pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew);
-            var arch = (ushort)Marshal.ReadInt16(new IntPtr(
-                pNtHeader.ToInt64() +
-                Marshal.SizeOf(typeof(int))));
 
-            if (arch == 0x8664)
+            if (Environment.Is64BitProcess)
             {
-                Console.WriteLine("[*] Architecture is x64.");
+                pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew);
+                pImageFileMachine = new IntPtr(pNtHeader.ToInt64() + Marshal.SizeOf(typeof(int)));
+            }
+            else
+            {
+                pNtHeader = new IntPtr(hModule.ToInt32() + dosHeader.e_lfanew);
+                pImageFileMachine = new IntPtr(pNtHeader.ToInt32() + Marshal.SizeOf(typeof(int)));
+            }
+
+            g_Architecture = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(pImageFileMachine);
+
+            if (g_Architecture == IMAGE_FILE_MACHINE.I386)
+            {
+                Console.WriteLine("[*] Architecture is {0}.", g_Architecture.ToString());
+
+                var ntHeader = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(
+                    pNtHeader,
+                    typeof(IMAGE_NT_HEADERS32));
+                rvaExportDirectory = ntHeader.OptionalHeader.ExportTable.VirtualAddress;
+            }
+            else if (g_Architecture == IMAGE_FILE_MACHINE.AMD64)
+            {
+                Console.WriteLine("[*] Architecture is {0}.", g_Architecture.ToString());
 
                 var ntHeader = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(
                     pNtHeader,
                     typeof(IMAGE_NT_HEADERS64));
                 rvaExportDirectory = ntHeader.OptionalHeader.ExportTable.VirtualAddress;
             }
-            else if (arch == 0x014C)
+            else if (g_Architecture == IMAGE_FILE_MACHINE.ARM64)
             {
-                Console.WriteLine("[*] Architecture is x86.");
+                Console.WriteLine("[*] Architecture is {0}.", g_Architecture.ToString());
 
-                var ntHeader = (IMAGE_NT_HEADERS32)Marshal.PtrToStructure(
+                var ntHeader = (IMAGE_NT_HEADERS64)Marshal.PtrToStructure(
                     pNtHeader,
-                    typeof(IMAGE_NT_HEADERS32));
+                    typeof(IMAGE_NT_HEADERS64));
                 rvaExportDirectory = ntHeader.OptionalHeader.ExportTable.VirtualAddress;
             }
             else
@@ -482,13 +554,24 @@ namespace HalosGatePoC.Library
                 return results;
             }
 
-            var pExportDirectory = new IntPtr(hModule.ToInt64() + rvaExportDirectory);
-            var exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
-                pExportDirectory,
-                typeof(IMAGE_EXPORT_DIRECTORY));
-            var exportName = Marshal.PtrToStringAnsi(new IntPtr(
-                hModule.ToInt64() +
-                exportDirectory.Name));
+            if (Environment.Is64BitProcess)
+            {
+                pExportDirectory = new IntPtr(hModule.ToInt64() + rvaExportDirectory);
+                exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
+                    pExportDirectory,
+                    typeof(IMAGE_EXPORT_DIRECTORY));
+                pExportName = new IntPtr(hModule.ToInt64() + exportDirectory.Name);
+            }
+            else
+            {
+                pExportDirectory = new IntPtr(hModule.ToInt32() + rvaExportDirectory);
+                exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
+                    pExportDirectory,
+                    typeof(IMAGE_EXPORT_DIRECTORY));
+                pExportName = new IntPtr(hModule.ToInt32() + (int)exportDirectory.Name);
+            }
+
+            exportName = Marshal.PtrToStringAnsi(pExportName);
 
             if (exportName != "ntdll.dll")
             {
@@ -497,25 +580,44 @@ namespace HalosGatePoC.Library
                 return results;
             }
 
-            var rgx = new Regex(@"^Nt\S+$");
-            var numNames = exportDirectory.NumberOfNames;
-            var pExportNames = new IntPtr(hModule.ToInt64() + exportDirectory.AddressOfNames);
-            var pExportOrdinals = new IntPtr(hModule.ToInt64() + exportDirectory.AddressOfNameOrdinals);
-            var pExportFunctions = new IntPtr(hModule.ToInt64() + exportDirectory.AddressOfFunctions);
-            IntPtr pFunctionName;
-            IntPtr pFunction;
-            short ordinal;
-            string functionName;
+            numNames = exportDirectory.NumberOfNames;
+            
+            if (Environment.Is64BitProcess)
+            {
+                pExportNames = new IntPtr(hModule.ToInt64() + exportDirectory.AddressOfNames);
+                pExportOrdinals = new IntPtr(hModule.ToInt64() + exportDirectory.AddressOfNameOrdinals);
+                pExportFunctions = new IntPtr(hModule.ToInt64() + exportDirectory.AddressOfFunctions);
+            }
+            else
+            {
+                pExportNames = new IntPtr(hModule.ToInt32() + (int)exportDirectory.AddressOfNames);
+                pExportOrdinals = new IntPtr(hModule.ToInt32() + (int)exportDirectory.AddressOfNameOrdinals);
+                pExportFunctions = new IntPtr(hModule.ToInt32() + (int)exportDirectory.AddressOfFunctions);
+            }
 
             for (var idx = 0; idx < numNames; idx++)
             {
-                pFunctionName = new IntPtr(
-                    hModule.ToInt64() +
-                    Marshal.ReadInt32(new IntPtr(pExportNames.ToInt64() + Marshal.SizeOf(typeof(uint)) * idx)));
-                ordinal = Marshal.ReadInt16(new IntPtr(pExportOrdinals.ToInt64() + Marshal.SizeOf(typeof(short)) * idx));
-                pFunction = new IntPtr(
-                    hModule.ToInt64() +
-                    Marshal.ReadInt32(new IntPtr(pExportFunctions.ToInt64() + Marshal.SizeOf(typeof(uint)) * ordinal)));
+                if (Environment.Is64BitProcess)
+                {
+                    pFunctionName = new IntPtr(
+                        hModule.ToInt64() +
+                        Marshal.ReadInt32(new IntPtr(pExportNames.ToInt64() + Marshal.SizeOf(typeof(uint)) * idx)));
+                    ordinal = Marshal.ReadInt16(new IntPtr(pExportOrdinals.ToInt64() + Marshal.SizeOf(typeof(short)) * idx));
+                    pFunction = new IntPtr(
+                        hModule.ToInt64() +
+                        Marshal.ReadInt32(new IntPtr(pExportFunctions.ToInt64() + Marshal.SizeOf(typeof(uint)) * ordinal)));
+                }
+                else
+                {
+                    pFunctionName = new IntPtr(
+                        hModule.ToInt32() +
+                        Marshal.ReadInt32(new IntPtr(pExportNames.ToInt32() + Marshal.SizeOf(typeof(uint)) * idx)));
+                    ordinal = Marshal.ReadInt16(new IntPtr(pExportOrdinals.ToInt32() + Marshal.SizeOf(typeof(short)) * idx));
+                    pFunction = new IntPtr(
+                        hModule.ToInt32() +
+                        Marshal.ReadInt32(new IntPtr(pExportFunctions.ToInt32() + Marshal.SizeOf(typeof(uint)) * ordinal)));
+                }
+
                 functionName = Marshal.PtrToStringAnsi(pFunctionName);
 
                 if (!rgx.IsMatch(functionName))
@@ -531,15 +633,16 @@ namespace HalosGatePoC.Library
         public static Dictionary<string, int> ResolveSyscallNumbers(
             string[] syscallNames)
         {
-            var results = new Dictionary<string, int>();
             IntPtr pBaseAddress;
+            IntPtr pFunction;
+            int nFunctionBytes;
+            int syscallNumber;
+            var results = new Dictionary<string, int>();
 
-            if (functionTable.Count == 0)
-            {
-                functionTable = ListNtFunctionTableFromNtdll();
-            }
+            if (g_FunctionTable.Count == 0)
+                g_FunctionTable = ListNtFunctionTableFromNtdll();
 
-            if (functionTable.Count == 0)
+            if (g_FunctionTable.Count == 0)
             {
                 Console.WriteLine("[-] Failed to get Nt function table.");
 
@@ -548,35 +651,116 @@ namespace HalosGatePoC.Library
 
             for (var idx = 0; idx < syscallNames.Length; idx++)
             {
-                if (functionTable.ContainsKey(syscallNames[idx]))
-                    pBaseAddress = functionTable[syscallNames[idx]];
+                if (g_FunctionTable.ContainsKey(syscallNames[idx]))
+                    pBaseAddress = g_FunctionTable[syscallNames[idx]];
                 else
                     continue;
 
                 for (var count = 0; count < 0x10; count++)
                 {
-                    pBaseAddress = new IntPtr(pBaseAddress.ToInt64() - 0x20 * count);
+                    if (g_Architecture == IMAGE_FILE_MACHINE.I386)
+                    {
+                        nFunctionBytes = 0x20;
 
-                    if (Environment.Is64BitOperatingSystem &&
-                        Marshal.ReadByte(pBaseAddress, 3) == 0xB8)
-                    {
-                        results.Add(
-                            syscallNames[idx],
-                            Marshal.ReadInt32(pBaseAddress, 4) + count);
-                        break;
+                        if (Environment.Is64BitProcess)
+                            pFunction = new IntPtr(pBaseAddress.ToInt64() - nFunctionBytes * count);
+                        else
+                            pFunction = new IntPtr(pBaseAddress.ToInt32() - nFunctionBytes * count);
+
+                        if (SearchBytes(
+                            pFunction,
+                            nFunctionBytes,
+                            new byte[] { 0x0F, 0x34 }).Length > 0) // sysenter
+                        {
+                            if (Marshal.ReadByte(pFunction) == 0xB8) // mov eax, 0x????
+                            {
+                                syscallNumber = Marshal.ReadInt32(pFunction, 1);
+                                results.Add(syscallNames[idx], syscallNumber + count);
+
+                                break;
+                            }
+                        }
                     }
-                    else if (Environment.Is64BitOperatingSystem &&
-                        Marshal.ReadByte(pBaseAddress, 1) == 0xB8)
+                    else if (g_Architecture == IMAGE_FILE_MACHINE.AMD64)
                     {
-                        results.Add(
-                            syscallNames[idx],
-                            Marshal.ReadInt32(pBaseAddress, 4) + count);
+                        nFunctionBytes = 0x20;
+                        pFunction = new IntPtr(pBaseAddress.ToInt64() - nFunctionBytes * count);
+
+                        if (SearchBytes(
+                            pFunction,
+                            nFunctionBytes,
+                            new byte[] { 0x0F, 0x05 }).Length > 0) // syscall
+                        {
+                            if ((uint)Marshal.ReadInt32(pFunction) == 0xB8D18B4C) // mov r10, rcx; mov eax, 0x???? 
+                            {
+                                syscallNumber = Marshal.ReadInt32(pFunction, 4);
+                                results.Add(syscallNames[idx], syscallNumber + count);
+
+                                break;
+                            }
+                        }
+                    }
+                    else if (g_Architecture != IMAGE_FILE_MACHINE.ARM64)
+                    {
+                        nFunctionBytes = 0x8;
+                        pFunction = new IntPtr(pBaseAddress.ToInt64() - nFunctionBytes * count);
+
+                        if ((((uint)Marshal.ReadInt32(pFunction) & 0xFFE0001F) ^ 0xD4000001) == 0) // svc #0x????
+                        {
+                            syscallNumber = (Marshal.ReadInt32(pFunction) >> 5) & 0x0000FFFF; // Decode svc instruction
+                            results.Add(syscallNames[idx], syscallNumber);
+
+                            break;
+                        }
+                    }
+                    else
+                    {
                         break;
                     }
                 }
             }
 
             return results;
+        }
+
+
+        private static IntPtr[] SearchBytes(
+            IntPtr basePointer,
+            int range,
+            byte[] searchBytes)
+        {
+            var results = new List<IntPtr>();
+            IntPtr pointer;
+            IntPtr offsetPointer;
+            bool found;
+
+            for (var count = 0; count < (range - searchBytes.Length); count++)
+            {
+                found = false;
+
+                if (Environment.Is64BitProcess)
+                    pointer = new IntPtr(basePointer.ToInt64() + count);
+                else
+                    pointer = new IntPtr(basePointer.ToInt32() + count);
+
+                for (var position = 0; position < searchBytes.Length; position++)
+                {
+                    if (Environment.Is64BitProcess)
+                        offsetPointer = new IntPtr(pointer.ToInt64() + position);
+                    else
+                        offsetPointer = new IntPtr(pointer.ToInt32() + position);
+
+                    found = (Marshal.ReadByte(offsetPointer) == searchBytes[position]);
+
+                    if (!found)
+                        break;
+                }
+
+                if (found)
+                    results.Add(pointer);
+            }
+
+            return results.ToArray();
         }
 
 

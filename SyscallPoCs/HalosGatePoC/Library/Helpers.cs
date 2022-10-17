@@ -9,6 +9,14 @@ namespace HalosGatePoC.Library
 {
     internal class Helpers
     {
+        public static bool CompareStringIgnoreCase(string stringA, string stringB)
+        {
+            var comparison = StringComparison.OrdinalIgnoreCase;
+
+            return (string.Compare(stringA, stringB, comparison) == 0);
+        }
+
+
         public static string GetWin32ErrorMessage(int code, bool isNtStatus)
         {
             int nReturnedLength;

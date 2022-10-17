@@ -159,7 +159,7 @@ namespace SyscallDumper.Library
             public IMAGE_DATA_DIRECTORY ManagedNativeHeader;
         }
 
-            [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential)]
         public struct IMAGE_DATA_DIRECTORY
         {
             public uint VirtualAddress;
@@ -963,15 +963,14 @@ namespace SyscallDumper.Library
             var results = new Dictionary<string, IntPtr>();
 
             if (this.Is64Bit)
-            {
                 nTableOffset = this.ConvertRvaToOffset(this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
-                pExportDirectory = new IntPtr(this.Buffer.ToInt64() + nTableOffset);
-            }
             else
-            {
                 nTableOffset = this.ConvertRvaToOffset(this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
-                pExportDirectory = new IntPtr(this.Buffer.ToInt32() + (int)nTableOffset);
-            }
+
+            if (Environment.Is64BitProcess)
+                pExportDirectory = new IntPtr(this.Buffer.ToInt64() + nTableOffset);
+            else
+                pExportDirectory = new IntPtr(this.Buffer.ToInt32() + nTableOffset);
 
             exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
                 pExportDirectory,
@@ -982,18 +981,28 @@ namespace SyscallDumper.Library
 
             for (var idx = 0; idx < exportDirectory.NumberOfNames; idx++)
             {
-                nNameRva = (uint)this.ReadInt32(new IntPtr(nNameTableOffset + (Marshal.SizeOf(typeof(int)) * idx)));
-                nNameOffset = this.ConvertRvaToOffset(nNameRva);
-                functionName = this.ReadAnsiString(new IntPtr(nNameOffset));
-                functionOrdinal = this.ReadInt16(new IntPtr(nOrdinalTableOffset + Marshal.SizeOf(typeof(short)) * idx));
-                nFunctionRva = (uint)this.ReadInt32(new IntPtr(nFunctionTableOffset + Marshal.SizeOf(typeof(int)) * functionOrdinal));
+
 
                 if (Environment.Is64BitProcess)
+                {
+                    nNameRva = (uint)this.ReadInt32(new IntPtr((long)nNameTableOffset + (Marshal.SizeOf(typeof(int)) * idx)));
+                    nNameOffset = this.ConvertRvaToOffset(nNameRva);
+                    functionName = this.ReadAnsiString(new IntPtr((long)nNameOffset));
+                    functionOrdinal = this.ReadInt16(new IntPtr((long)nOrdinalTableOffset + Marshal.SizeOf(typeof(short)) * idx));
+                    nFunctionRva = (uint)this.ReadInt32(new IntPtr((long)nFunctionTableOffset + Marshal.SizeOf(typeof(int)) * functionOrdinal));
                     pFunctionCode = new IntPtr((long)this.ConvertRvaToOffset(nFunctionRva));
+                }
                 else
+                {
+                    nNameRva = (uint)this.ReadInt32(new IntPtr((int)nNameTableOffset + (Marshal.SizeOf(typeof(int)) * idx)));
+                    nNameOffset = this.ConvertRvaToOffset(nNameRva);
+                    functionName = this.ReadAnsiString(new IntPtr((int)nNameOffset));
+                    functionOrdinal = this.ReadInt16(new IntPtr((int)nOrdinalTableOffset + Marshal.SizeOf(typeof(short)) * idx));
+                    nFunctionRva = (uint)this.ReadInt32(new IntPtr((int)nFunctionTableOffset + Marshal.SizeOf(typeof(int)) * functionOrdinal));
                     pFunctionCode = new IntPtr((int)this.ConvertRvaToOffset(nFunctionRva));
+                }
 
-                results.Add(functionName,　pFunctionCode);
+                results.Add(functionName, pFunctionCode);
             }
 
             return results;
@@ -1009,20 +1018,26 @@ namespace SyscallDumper.Library
             IMAGE_EXPORT_DIRECTORY exportDirectory;
 
             if (this.Is64Bit)
-            {
                 nTableOffset = this.ConvertRvaToOffset(this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
+            else
+                nTableOffset = this.ConvertRvaToOffset(this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
+
+            if (Environment.Is64BitProcess)
+            {
                 pExportDirectory = new IntPtr(this.Buffer.ToInt64() + nTableOffset);
+                exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
+                    pExportDirectory,
+                    typeof(IMAGE_EXPORT_DIRECTORY));
+                pNameBuffer = new IntPtr((long)this.ConvertRvaToOffset(exportDirectory.Name));
             }
             else
             {
-                nTableOffset = this.ConvertRvaToOffset(this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
                 pExportDirectory = new IntPtr(this.Buffer.ToInt32() + (int)nTableOffset);
+                exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
+                    pExportDirectory,
+                    typeof(IMAGE_EXPORT_DIRECTORY));
+                pNameBuffer = new IntPtr((int)this.ConvertRvaToOffset(exportDirectory.Name));
             }
-
-            exportDirectory = (IMAGE_EXPORT_DIRECTORY)Marshal.PtrToStructure(
-                pExportDirectory,
-                typeof(IMAGE_EXPORT_DIRECTORY));
-            pNameBuffer = new IntPtr(this.ConvertRvaToOffset(exportDirectory.Name));
 
             try
             {
@@ -1040,18 +1055,38 @@ namespace SyscallDumper.Library
         public IntPtr GetExportTablePointer()
         {
             if (this.Is64Bit)
-                return new IntPtr((long)this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
+            {
+                if (Environment.Is64BitProcess)
+                    return new IntPtr((long)this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
+                else
+                    return new IntPtr((int)this.NtHeader64.OptionalHeader.ExportTable.VirtualAddress);
+            }
             else
-                return new IntPtr((int)this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
+            {
+                if (Environment.Is64BitProcess)
+                    return new IntPtr((long)this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
+                else
+                    return new IntPtr((int)this.NtHeader32.OptionalHeader.ExportTable.VirtualAddress);
+            }
         }
 
 
         public IntPtr GetImageBase()
         {
             if (this.Is64Bit)
-                return new IntPtr((long)this.NtHeader64.OptionalHeader.ImageBase);
+            {
+                if (Environment.Is64BitProcess)
+                    return new IntPtr((long)this.NtHeader64.OptionalHeader.ImageBase);
+                else
+                    return new IntPtr((int)this.NtHeader64.OptionalHeader.ImageBase);
+            }
             else
-                return new IntPtr((int)this.NtHeader32.OptionalHeader.ImageBase);
+            {
+                if (Environment.Is64BitProcess)
+                    return new IntPtr((long)this.NtHeader32.OptionalHeader.ImageBase);
+                else
+                    return new IntPtr((int)this.NtHeader32.OptionalHeader.ImageBase);
+            }
         }
 
 
@@ -1060,7 +1095,12 @@ namespace SyscallDumper.Library
             foreach (var header in this.SectionHeaders)
             {
                 if (sectionName == header.Name)
-                    return new IntPtr(header.PointerToRawData);
+                {
+                    if (Environment.Is64BitProcess)
+                        return new IntPtr((long)header.PointerToRawData);
+                    else
+                        return new IntPtr((int)header.PointerToRawData);
+                }
             }
 
             return IntPtr.Zero;
@@ -1286,14 +1326,7 @@ namespace SyscallDumper.Library
 
         public string ReadAnsiString(IntPtr address)
         {
-            IntPtr pStringBuffer;
-
-            if (Environment.Is64BitProcess)
-                pStringBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pStringBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return Marshal.PtrToStringAnsi(pStringBuffer);
+            return this.ReadAnsiString(address, 0);
         }
 
 
@@ -1312,14 +1345,7 @@ namespace SyscallDumper.Library
 
         public byte ReadByte(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return Marshal.ReadByte(pBuffer);
+            return this.ReadByte(address, 0);
         }
 
 
@@ -1338,14 +1364,7 @@ namespace SyscallDumper.Library
 
         public short ReadInt16(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return Marshal.ReadInt16(pBuffer);
+            return this.ReadInt16(address, 0);
         }
 
 
@@ -1364,14 +1383,7 @@ namespace SyscallDumper.Library
 
         public int ReadInt32(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return Marshal.ReadInt32(pBuffer);
+            return this.ReadInt32(address, 0);
         }
 
 
@@ -1390,14 +1402,7 @@ namespace SyscallDumper.Library
 
         public long ReadInt64(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return Marshal.ReadInt64(pBuffer);
+            return this.ReadInt64(address, 0);
         }
 
 
@@ -1416,17 +1421,7 @@ namespace SyscallDumper.Library
 
         public IntPtr ReadIntPtr(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            if (this.Is64Bit)
-                return new IntPtr(Marshal.ReadInt64(pBuffer));
-            else
-                return new IntPtr(Marshal.ReadInt32(pBuffer));
+            return this.ReadIntPtr(address, 0);
         }
 
 
@@ -1448,14 +1443,7 @@ namespace SyscallDumper.Library
 
         public ushort ReadUInt16(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return (ushort)Marshal.ReadInt16(pBuffer);
+            return this.ReadUInt16(address, 0);
         }
 
 
@@ -1474,14 +1462,7 @@ namespace SyscallDumper.Library
 
         public uint ReadUInt32(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return (uint)Marshal.ReadInt32(pBuffer);
+            return this.ReadUInt32(address, 0);
         }
 
 
@@ -1500,14 +1481,7 @@ namespace SyscallDumper.Library
 
         public ulong ReadUInt64(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return (ulong)Marshal.ReadInt64(pBuffer);
+            return this.ReadUInt64(address, 0);
         }
 
 
@@ -1526,14 +1500,7 @@ namespace SyscallDumper.Library
 
         public string ReadUnicodeString(IntPtr address)
         {
-            IntPtr pBuffer;
-
-            if (Environment.Is64BitProcess)
-                pBuffer = new IntPtr(this.Buffer.ToInt64() + address.ToInt64());
-            else
-                pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32());
-
-            return Marshal.PtrToStringUni(pBuffer);
+            return this.ReadUnicodeString(address, 0);
         }
 
 
@@ -1550,40 +1517,9 @@ namespace SyscallDumper.Library
         }
 
 
-        public IntPtr[] SearchBytes(
-            IntPtr basePointer,
-            uint range,
-            byte[] searchBytes)
+        public IntPtr[] SearchBytes(IntPtr basePointer, uint range, byte[] searchBytes)
         {
-            var results = new List<IntPtr>();
-            IntPtr pointer;
-            bool found;
-
-            if (range > (uint)Int32.MaxValue)
-                return results.ToArray();
-
-            for (var count = 0; count < (int)(range - searchBytes.Length); count++)
-            {
-                found = false;
-
-                if (Environment.Is64BitProcess)
-                    pointer = new IntPtr(basePointer.ToInt64() + count);
-                else
-                    pointer = new IntPtr(basePointer.ToInt32() + count);
-
-                for (var position = 0; position < searchBytes.Length; position++)
-                {
-                    found = (this.ReadByte(pointer, position) == searchBytes[position]);
-
-                    if (!found)
-                        break;
-                }
-
-                if (found)
-                    results.Add(pointer);
-            }
-
-            return results.ToArray();
+            return this.SearchBytes(basePointer, 0, range, searchBytes);
         }
 
 
@@ -1625,39 +1561,9 @@ namespace SyscallDumper.Library
         }
 
 
-        public IntPtr SearchBytesFirst(
-            IntPtr basePointer,
-            uint range,
-            byte[] searchBytes)
+        public IntPtr SearchBytesFirst(IntPtr basePointer, uint range, byte[] searchBytes)
         {
-            IntPtr pointer;
-            bool found;
-
-            if (range > (uint)Int32.MaxValue)
-                return IntPtr.Zero;
-
-            for (var count = 0; count < (int)(range - searchBytes.Length); count++)
-            {
-                found = false;
-
-                if (Environment.Is64BitProcess)
-                    pointer = new IntPtr(basePointer.ToInt64() + count);
-                else
-                    pointer = new IntPtr(basePointer.ToInt32() + count);
-
-                for (var position = 0; position < searchBytes.Length; position++)
-                {
-                    found = (this.ReadByte(pointer, position) == searchBytes[position]);
-
-                    if (!found)
-                        break;
-                }
-
-                if (found)
-                    return pointer;
-            }
-
-            return IntPtr.Zero;
+            return this.SearchBytesFirst(basePointer, 0, range, searchBytes);
         }
 
 
