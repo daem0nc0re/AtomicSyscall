@@ -12,11 +12,15 @@ namespace PhysicalResolvePoC.Library
          * Global Variables
          */
         private IntPtr asmBuffer = IntPtr.Zero;
-        private readonly byte[] syscallBytes = new byte[] {
+        private readonly byte[] syscallBytesX64 = new byte[] {
             0x4C, 0x8B, 0xD1,             // mov r10, rcx
             0xB8, 0x00, 0x00, 0x00, 0x00, // mov eax, 0x00 (patched with syscall number)
             0x0F, 0x05,                   // syscall
             0xC3                          // ret
+        };
+        private readonly byte[] syscallBytesArm64 = new byte[] {
+            0x00, 0x00, 0x00, 0x00, // svc #0x??
+            0xC0, 0x03, 0x5F, 0xD6  // ret
         };
         private readonly Dictionary<string, int> syscallTable = new Dictionary<string, int>();
         private readonly MemoryMappedFile memoryMap;
@@ -26,6 +30,10 @@ namespace PhysicalResolvePoC.Library
          */
         private bool SetSyscallBytes(int syscallNumber)
         {
+            byte[] syscallBytes;
+            IntPtr pBufferToWrite;
+            string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+
             if (this.asmBuffer == IntPtr.Zero)
             {
                 Console.WriteLine("[-] Buffer for assembly code have not been allocated.");
@@ -33,14 +41,32 @@ namespace PhysicalResolvePoC.Library
                 return false;
             }
 
-            this.syscallBytes[4] = (byte)(syscallNumber & 0xff);
-            this.syscallBytes[5] = (byte)((syscallNumber >> 8) & 0xff);
-            this.syscallBytes[6] = (byte)((syscallNumber >> 16) & 0xff);
-            this.syscallBytes[7] = (byte)((syscallNumber >> 24) & 0xff);
-
             try
             {
-                Marshal.Copy(this.syscallBytes, 0, this.asmBuffer, this.syscallBytes.Length);
+                if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+                {
+                    syscallBytes = this.syscallBytesX64;
+
+                    if (Environment.Is64BitProcess)
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 4);
+                    else
+                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 4);
+
+                    Marshal.Copy(syscallBytes, 0, this.asmBuffer, syscallBytes.Length);
+                    Marshal.WriteInt32(pBufferToWrite, syscallNumber);
+                }
+                else if (Helpers.CompareStringIgnoreCase(architecture, "ARM64"))
+                {
+                    syscallBytes = this.syscallBytesArm64;
+                    Marshal.Copy(syscallBytes, 0, this.asmBuffer, syscallBytes.Length);
+                    Marshal.WriteInt32(this.asmBuffer, (int)(0xD4000001 | (syscallNumber << 5)));
+                }
+                else
+                {
+                    Console.WriteLine("[-] Unsupported architecture.");
+
+                    return false;
+                }
 
                 return true;
             }
@@ -57,16 +83,34 @@ namespace PhysicalResolvePoC.Library
          */
         public Syscall(Dictionary<string, int> table)
         {
+            byte[] syscallBytes;
+            string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+
+            if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+            {
+                syscallBytes = this.syscallBytesX64;
+            }
+            else if (Helpers.CompareStringIgnoreCase(architecture, "ARM64"))
+            {
+                syscallBytes = this.syscallBytesArm64;
+            }
+            else
+            {
+                Console.WriteLine("[-] Unsupported architecture.");
+
+                return;
+            }
+
             if (table.Count > 0)
             {
                 this.syscallTable = table;
                 this.memoryMap = MemoryMappedFile.CreateNew(
                     null,
-                    this.syscallBytes.Length,
+                    syscallBytes.Length,
                     MemoryMappedFileAccess.ReadWriteExecute);
                 var accessor = memoryMap.CreateViewAccessor(
                     0,
-                    this.syscallBytes.Length,
+                    syscallBytes.Length,
                     MemoryMappedFileAccess.ReadWriteExecute);
                 this.asmBuffer = accessor.SafeMemoryMappedViewHandle.DangerousGetHandle();
 
@@ -134,7 +178,7 @@ namespace PhysicalResolvePoC.Library
             {
                 numSyscall = syscallTable[nameSyscall];
                 Console.WriteLine(
-                    "    |-> Syscall Number : {0} (0x{1})",
+                    "    [*] Syscall Number : {0} (0x{1})",
                     numSyscall,
                     numSyscall.ToString("X4"));
             }
