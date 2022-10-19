@@ -81,7 +81,7 @@ namespace SyscallDumper.Library
                         }
                         else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.ARM64)
                         {
-                            if ((((uint)pe.ReadInt32(entry.Value) & 0xFFE0001F) ^ 0xD4000001) == 0) // svc #0x????
+                            if (((uint)pe.ReadInt32(entry.Value) & 0xFFE0001F) == 0xD4000001) // svc #0x????
                             {
                                 syscallNumber = (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF; // Decode svc instruction
                                 results.Add(entry.Key, syscallNumber);

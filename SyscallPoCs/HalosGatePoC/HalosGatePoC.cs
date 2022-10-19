@@ -15,19 +15,6 @@ namespace HalosGatePoC
             /*
              * Syscall Number Resolve
              */
-            if (!Environment.Is64BitOperatingSystem)
-            {
-                Console.WriteLine("[-] 32 bit OS is not supported.\n");
-
-                return;
-            }
-            else if (IntPtr.Size != 8)
-            {
-                Console.WriteLine("[-] Should be built with 64 bit pointer.");
-
-                return;
-            }
-
             var syscallList = new string[] {
                 "NtQuerySystemInformation"
             };

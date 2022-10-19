@@ -548,10 +548,10 @@ namespace PhysicalResolvePoC.Library
         /*
          * Global Variables
          */
+        private IntPtr Buffer;
         public readonly bool Is64Bit;
         public readonly bool IsDotNet;
         public readonly IMAGE_FILE_MACHINE Architecture;
-        public readonly IntPtr Buffer;
         public readonly uint SizeOfBuffer;
         private readonly IMAGE_DOS_HEADER DosHeader;
         private readonly IMAGE_NT_HEADERS32 NtHeader32;
@@ -862,7 +862,10 @@ namespace PhysicalResolvePoC.Library
         public void Dispose()
         {
             if (this.Buffer != IntPtr.Zero)
+            {
                 Marshal.FreeHGlobal(this.Buffer);
+                this.Buffer = IntPtr.Zero;
+            }
         }
 
 
@@ -915,6 +918,12 @@ namespace PhysicalResolvePoC.Library
                 return this.NtHeader64.OptionalHeader.BaseOfCode;
             else
                 return this.NtHeader32.OptionalHeader.BaseOfCode;
+        }
+
+
+        public IntPtr GetBufferPointer()
+        {
+            return this.Buffer;
         }
 
 
@@ -981,8 +990,6 @@ namespace PhysicalResolvePoC.Library
 
             for (var idx = 0; idx < exportDirectory.NumberOfNames; idx++)
             {
-
-
                 if (Environment.Is64BitProcess)
                 {
                     nNameRva = (uint)this.ReadInt32(new IntPtr((long)nNameTableOffset + (Marshal.SizeOf(typeof(int)) * idx)));

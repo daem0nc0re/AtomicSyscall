@@ -39,7 +39,6 @@ namespace HalosGatePoC.Library
          */
         private bool SetSyscallBytes(int syscallNumber)
         {
-            IntPtr pBufferToWrite;
             string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
 
             if (this.asmBuffer == IntPtr.Zero)
@@ -53,31 +52,15 @@ namespace HalosGatePoC.Library
             {
                 if (Helpers.CompareStringIgnoreCase(architecture, "x86"))
                 {
-                    if (Environment.Is64BitProcess)
-                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 1);
-                    else
-                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 1);
-
                     // Patch syscall number
-                    Marshal.WriteInt32(pBufferToWrite, syscallNumber);
-
-                    if (Environment.Is64BitProcess)
-                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 11);
-                    else
-                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 11);
-
+                    Marshal.WriteInt32(this.asmBuffer, 1, syscallNumber);
                     // Patch retn instruction's immediate value
-                    Marshal.WriteInt16(pBufferToWrite, (short)(numberOfParameters * 4));
+                    Marshal.WriteInt16(this.asmBuffer, 11, (short)(numberOfParameters * 4));
                 }
                 else if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
                 {
-                    if (Environment.Is64BitProcess)
-                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt64() + 4);
-                    else
-                        pBufferToWrite = new IntPtr(this.asmBuffer.ToInt32() + 4);
-
                     // Patch syscall number
-                    Marshal.WriteInt32(pBufferToWrite, syscallNumber);
+                    Marshal.WriteInt32(this.asmBuffer, 4, syscallNumber);
                 }
                 else if (Helpers.CompareStringIgnoreCase(architecture, "ARM64"))
                 {

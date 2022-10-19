@@ -462,7 +462,6 @@ namespace HellsGatePoC.Library
          */
         public static Dictionary<string, int> DumpSyscallNumberFromNtdll()
         {
-            IntPtr pImageFileMachine;
             IntPtr pNtHeader;
             IntPtr pExportDirectory;
             IntPtr pExportNames;
@@ -502,17 +501,11 @@ namespace HellsGatePoC.Library
                 typeof(IMAGE_DOS_HEADER));
 
             if (Environment.Is64BitProcess)
-            {
                 pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew);
-                pImageFileMachine = new IntPtr(pNtHeader.ToInt64() + Marshal.SizeOf(typeof(int)));
-            }
             else
-            {
                 pNtHeader = new IntPtr(hModule.ToInt32() + dosHeader.e_lfanew);
-                pImageFileMachine = new IntPtr(pNtHeader.ToInt32() + Marshal.SizeOf(typeof(int)));
-            }
 
-            arch = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(pImageFileMachine);
+            arch = (IMAGE_FILE_MACHINE)Marshal.ReadInt16(pNtHeader, Marshal.SizeOf(typeof(int)));
 
             if (arch == IMAGE_FILE_MACHINE.I386)
             {
@@ -646,7 +639,7 @@ namespace HellsGatePoC.Library
                 }
                 else if (arch == IMAGE_FILE_MACHINE.ARM64)
                 {
-                    if ((((uint)Marshal.ReadInt32(pFunction) & 0xFFE0001F) ^ 0xD4000001) == 0) // svc #0x????
+                    if (((uint)Marshal.ReadInt32(pFunction) & 0xFFE0001F) == 0xD4000001) // svc #0x????
                     {
                         syscallNumber = (Marshal.ReadInt32(pFunction) >> 5) & 0x0000FFFF; // Decode svc instruction
                         results.Add(functionName, syscallNumber);
@@ -674,10 +667,9 @@ namespace HellsGatePoC.Library
             int range,
             byte[] searchBytes)
         {
-            var results = new List<IntPtr>();
             IntPtr pointer;
-            IntPtr offsetPointer;
             bool found;
+            var results = new List<IntPtr>();
 
             for (var count = 0; count < (range - searchBytes.Length); count++)
             {
@@ -690,12 +682,7 @@ namespace HellsGatePoC.Library
 
                 for (var position = 0; position < searchBytes.Length; position++)
                 {
-                    if (Environment.Is64BitProcess)
-                        offsetPointer = new IntPtr(pointer.ToInt64() + position);
-                    else
-                        offsetPointer = new IntPtr(pointer.ToInt32() + position);
-
-                    found = (Marshal.ReadByte(offsetPointer) == searchBytes[position]);
+                    found = (Marshal.ReadByte(pointer, position) == searchBytes[position]);
 
                     if (!found)
                         break;
