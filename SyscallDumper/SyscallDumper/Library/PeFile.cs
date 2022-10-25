@@ -1442,9 +1442,16 @@ namespace SyscallDumper.Library
                 pBuffer = new IntPtr(this.Buffer.ToInt32() + address.ToInt32() + offset);
 
             if (this.Is64Bit)
-                return new IntPtr(Marshal.ReadInt64(pBuffer));
+            {
+                if (Environment.Is64BitProcess)
+                    return new IntPtr(Marshal.ReadInt64(pBuffer));
+                else
+                    return new IntPtr((int)Marshal.ReadInt64(pBuffer));
+            }
             else
+            {
                 return new IntPtr(Marshal.ReadInt32(pBuffer));
+            }
         }
 
 

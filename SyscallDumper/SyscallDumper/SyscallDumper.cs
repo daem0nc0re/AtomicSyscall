@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using SyscallDumper.Handler;
-using SyscallDumper.Library;
 
 namespace SyscallDumper
 {
@@ -9,7 +8,7 @@ namespace SyscallDumper
     {
         static void Main(string[] args)
         {
-            CommandLineParser options = new CommandLineParser();
+            var options = new CommandLineParser();
             var exclusive = new List<string> { "dump", "diff" };
 
             try
