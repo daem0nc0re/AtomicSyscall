@@ -47,8 +47,8 @@
   <ItemGroup>
     <Compile Include="HalosGatePoC.cs" />
     <Compile Include="Interop\NativeMethods.cs" />
-    <Compile Include="Interop\Win32Enum.cs" />
-    <Compile Include="Interop\Win32Struct.cs" />
+    <Compile Include="Interop\Win32Enums.cs" />
+    <Compile Include="Interop\Win32Structs.cs" />
     <Compile Include="Library\HalosGate.cs" />
     <Compile Include="Library\Helpers.cs" />
     <Compile Include="Library\Syscall.cs" />
