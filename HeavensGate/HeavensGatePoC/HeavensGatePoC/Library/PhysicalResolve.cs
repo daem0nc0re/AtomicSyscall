@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace SyscallDumper.Library
+namespace HeavensGatePoC.Library
 {
-    internal class Utilities
+    internal class PhysicalResolve
     {
         public static Dictionary<string, int> DumpSyscallNumber(
             string filePath)

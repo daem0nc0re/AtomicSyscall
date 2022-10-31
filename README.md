@@ -5,11 +5,17 @@ Tools and PoCs for Windows syscall investigation.
 ## Table Of Contents
 
 - [AtomicSyscall](#atomicsyscall)
+  - [HeavensGate](#heavensgate)
   - [SyscallDumper](#syscalldumper)
   - [SyscallPoCs](#syscallpocs)
   - [SyscallResolvers](#syscallresolvers)
   - [Reference](#reference)
   - [Acknowledgments](#acknowledgments)
+
+## HeavensGate
+
+This directory is for Heaven's Gate technique.
+See [README.md](./HeavensGate/README.md)
 
 
 ## SyscallDumper
@@ -264,6 +270,14 @@ On the other hand, Halo's Gate technique works for patched `NtCreateProcessEx` f
 
 * [https://github.com/jhalon/SharpCall](https://github.com/jhalon/SharpCall)
 
+### Heaven's Gate
+* [https://wbenny.github.io/2018/11/04/wow64-internals.html](https://wbenny.github.io/2018/11/04/wow64-internals.html)
+
+* [https://medium.com/@fsx30/hooking-heavens-gate-a-wow64-hooking-technique-5235e1aeed73](https://medium.com/@fsx30/hooking-heavens-gate-a-wow64-hooking-technique-5235e1aeed73)
+
+* [https://mark.rxmsolutions.com/through-the-heavens-gate/](https://mark.rxmsolutions.com/through-the-heavens-gate/)
+
+* [https://speakerdeck.com/aaaddress1/rebuild-the-heavens-gate-from-32-bit-hell-back-to-heaven-wonderland](https://speakerdeck.com/aaaddress1/rebuild-the-heavens-gate-from-32-bit-hell-back-to-heaven-wonderland)
 
 ### Hell's Gate
 
