@@ -80,7 +80,7 @@ namespace HeavensGatePoC
                 Console.ReadLine();
             }
 
-            Console.WriteLine("[*] Done.");
+            Console.WriteLine("[*] Done.\n");
         }
     }
 }
