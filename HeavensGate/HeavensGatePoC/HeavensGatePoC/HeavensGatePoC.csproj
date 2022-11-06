@@ -45,8 +45,10 @@
   <ItemGroup>
     <Compile Include="HeavensGatePoC.cs" />
     <Compile Include="Interop\NativeMethods.cs" />
+    <Compile Include="Interop\Win32Consts.cs" />
     <Compile Include="Interop\Win32Enums.cs" />
     <Compile Include="Interop\Win32Structs.cs" />
+    <Compile Include="Library\HeavensGateFactory.cs" />
     <Compile Include="Library\Helpers.cs" />
     <Compile Include="Library\PeFile.cs" />
     <Compile Include="Library\PhysicalResolve.cs" />

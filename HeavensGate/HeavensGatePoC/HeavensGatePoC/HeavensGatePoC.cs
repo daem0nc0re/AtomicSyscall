@@ -29,9 +29,6 @@ namespace HeavensGatePoC
                 return;
             }
 
-            var syscallTable = PhysicalResolve.DumpSyscallNumber(@"C:\Windows\System32\ntdll.dll");
-            var syscall = new Syscall(syscallTable);
-
             /*
              * Enumerate Drivers
              */
@@ -46,7 +43,7 @@ namespace HeavensGatePoC
             pSystemInfo = Marshal.AllocHGlobal(nBufferSize);
             Helpers.ZeroMemory(pSystemInfo, nBufferSize);
 
-            ntstatus = syscall.NtQueryInformationProcess(
+            ntstatus = Syscall.NtQueryInformationProcess(
                 Process.GetCurrentProcess().Handle,
                 PROCESS_INFORMATION_CLASS.ProcessBasicInformation,
                 pSystemInfo,
@@ -56,6 +53,7 @@ namespace HeavensGatePoC
             if (ntstatus != STATUS_SUCCESS)
             {
                 Console.WriteLine("[-] Failed to get current process basic information.");
+                Console.WriteLine("    [*] NTSTATUS : 0x{0}", ntstatus.ToString("X8"));
             }
             else
             {
@@ -67,12 +65,11 @@ namespace HeavensGatePoC
                 Console.WriteLine("    [*] ExitStatus      : 0x{0}", pbi.ExitStatus.ToString("X8"));
                 Console.WriteLine("    [*] PebBaseAddress  : 0x{0}", pbi.PebBaseAddress.ToString("X8"));
                 Console.WriteLine("    [*] BasePriority    : {0}", pbi.BasePriority);
-                Console.WriteLine("    [*] UniqueProcessId : {0}", pbi.UniqueProcessId.ToUInt32());
+                Console.WriteLine("    [*] UniqueProcessId : {0}", pbi.UniqueProcessId);
                 Console.WriteLine("[*] Check information of this process.");
             }
 
             Marshal.FreeHGlobal(pSystemInfo);
-            syscall.Dispose();
 
             if (ntstatus == STATUS_SUCCESS)
             {
