@@ -8,6 +8,17 @@ namespace HeavensGatePoC.Interop
         TRUE
     }
 
+    internal enum DAY_OF_WEEK : short
+    {
+        Sun,
+        Mon,
+        Tue,
+        Wed,
+        Thu,
+        Fri,
+        Sat
+    }
+
     [Flags]
     internal enum FormatMessageFlags : uint
     {
@@ -17,6 +28,31 @@ namespace HeavensGatePoC.Interop
         FORMAT_MESSAGE_FROM_HMODULE = 0x00000800,
         FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
         FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000
+    }
+
+    internal enum LDR_DLL_LOAD_REASON
+    {
+        StaticDependency = 0,
+        StaticForwarderDependency = 1,
+        DynamicForwarderDependency = 2,
+        DelayloadDependency = 3,
+        DynamicLoad = 4,
+        AsImageLoad = 5,
+        AsDataLoad = 6,
+        EnclavePrimary = 7,
+        EnclaveDependency = 8,
+        PatchImage = 9,
+        Unknown = -1
+    }
+
+    internal enum LDR_HOT_PATCH_STATE
+    {
+        LdrHotPatchBaseImage = 0,
+        LdrHotPatchNotApplied = 1,
+        LdrHotPatchAppliedReverse = 2,
+        LdrHotPatchAppliedForward = 3,
+        LdrHotPatchFailedToPatch = 4,
+        LdrHotPatchStateMax = 5
     }
 
     [Flags]

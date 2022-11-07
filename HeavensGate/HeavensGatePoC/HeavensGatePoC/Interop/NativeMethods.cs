@@ -8,6 +8,11 @@ namespace HeavensGatePoC.Interop
 
     internal class NativeMethods
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool FileTimeToSystemTime(
+            in LARGE_INTEGER lpFileTime,
+            out SYSTEMTIME lpSystemTime);
+
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern int FormatMessage(
             FormatMessageFlags dwFlags,
@@ -18,12 +23,16 @@ namespace HeavensGatePoC.Interop
             int nSize,
             IntPtr Arguments);
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate NTSTATUS NtQueryInformationProcess(
-            IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
-            IntPtr ProcessInformation,
-            uint ProcessInformationLength,
-            IntPtr pReturnLength);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool SystemTimeToTzSpecificLocalTime(
+            in TIME_ZONE_INFORMATION lpTimeZoneInformation,
+            in SYSTEMTIME lpUniversalTime,
+            out SYSTEMTIME lpLocalTime);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool SystemTimeToTzSpecificLocalTime(
+            IntPtr lpTimeZoneInformation,
+            in SYSTEMTIME lpUniversalTime,
+            out SYSTEMTIME lpLocalTime);
     }
 }

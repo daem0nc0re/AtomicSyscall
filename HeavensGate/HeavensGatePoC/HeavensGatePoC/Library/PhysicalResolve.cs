@@ -26,15 +26,9 @@ namespace HeavensGatePoC.Library
 
             try
             {
-                Console.WriteLine("[>] Loading {0}.", fullPath);
-
                 using (var pe = new PeFile(fullPath))
                 {
                     imageName = pe.GetExportImageName();
-
-                    Console.WriteLine("[+] {0} is loaded successfully.", fullPath);
-                    Console.WriteLine("    [*] Architecture : {0}", pe.Architecture);
-                    Console.WriteLine("    [*] Image Name   : {0}", imageName);
 
                     if (!Helpers.CompareStringIgnoreCase(imageName, "ntdll.dll") &&
                         !Helpers.CompareStringIgnoreCase(imageName, "win32u.dll"))
@@ -104,15 +98,6 @@ namespace HeavensGatePoC.Library
                 Console.WriteLine("[!] {0}\n", ex.Message);
 
                 return results;
-            }
-
-            if (results.Count > 0)
-            {
-                Console.WriteLine("[+] Got {0} syscall(s).", results.Count);
-            }
-            else
-            {
-                Console.WriteLine("[-] No syscall.");
             }
 
             return results;

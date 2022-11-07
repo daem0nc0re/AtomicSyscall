@@ -13,6 +13,108 @@ namespace HeavensGatePoC.Library
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         public delegate void ShellcodeType();
 
+        public static Dictionary<ulong, string> DumpInMemoryOrderModuleList(
+            IntPtr hProcess,
+            List<LDR_DATA_TABLE_ENTRY64> tableEntries,
+            bool is32bit,
+            int nIndentCount)
+        {
+            string line;
+            string lineFormat;
+            string imagePathName;
+            string dllLoadedTime;
+            string addressFormat = is32bit ? "X8" : "X16";
+            string headerBase = "Base";
+            string headerReason = "Reason";
+            string headerLoaded = "Loaded";
+            string headerModule = "Module";
+            int nMaxBaseStringLength = is32bit ? 10 : 18;
+            int nMaxReasonStringLength = headerReason.Length;
+            int nMaxLoadedStringLength = headerLoaded.Length;
+            int nMaxModuleStringLength = headerModule.Length;
+            var dictionaryDll = new Dictionary<ulong, string>();
+
+            if (tableEntries.Count == 0)
+                return dictionaryDll;
+
+            foreach (var table in tableEntries)
+            {
+                imagePathName = Utilities.ReadUnicodeString64(hProcess, table.FullDllName);
+                dllLoadedTime = Helpers.ConvertLargeIntegerToLocalTimeString(table.LoadTime);
+
+                if (string.IsNullOrEmpty(imagePathName))
+                    imagePathName = "N/A";
+
+                dictionaryDll.Add(table.DllBase, imagePathName);
+
+                if (table.LoadReason.ToString().Length > nMaxReasonStringLength)
+                    nMaxReasonStringLength = table.LoadReason.ToString().Length;
+
+                if (dictionaryDll[table.DllBase].Length > nMaxModuleStringLength)
+                    nMaxModuleStringLength = imagePathName.Length;
+
+                if (dllLoadedTime.Length > nMaxLoadedStringLength)
+                    nMaxLoadedStringLength = dllLoadedTime.Length;
+            }
+
+            lineFormat = string.Format(
+                "{0}{{0,{1}}} {{1,-{2}}} {{2,-{3}}} {{3,-{4}}}",
+                new string(' ', nIndentCount * 4),
+                nMaxBaseStringLength,
+                nMaxReasonStringLength,
+                nMaxLoadedStringLength,
+                nMaxModuleStringLength);
+
+            line = string.Format(lineFormat, headerBase, headerReason, headerLoaded, headerModule);
+            Console.WriteLine(line.TrimEnd());
+
+            foreach (var table in tableEntries)
+            {
+                line = string.Format(
+                    lineFormat,
+                    string.Format("0x{0}", table.DllBase.ToString(addressFormat)),
+                    table.LoadReason.ToString(),
+                    Helpers.ConvertLargeIntegerToLocalTimeString(table.LoadTime),
+                    dictionaryDll[table.DllBase]);
+                Console.WriteLine(line.TrimEnd());
+            }
+
+            return dictionaryDll;
+        }
+
+        public static bool GetLdrData(
+            IntPtr hProcess,
+            PEB64_PARTIAL peb64,
+            out PEB_LDR_DATA64 ldr)
+        {
+            NTSTATUS ntstatus;
+            bool status;
+            int nBufferSize = Marshal.SizeOf(typeof(PEB_LDR_DATA64));
+            IntPtr pLdr = Marshal.AllocHGlobal(nBufferSize);
+
+            ntstatus = Syscall.NtReadVirtualMemory(
+                hProcess,
+                peb64.Ldr,
+                pLdr,
+                (uint)nBufferSize,
+                out uint nReturnedBytes);
+
+            if ((ntstatus == Win32Consts.STATUS_SUCCESS) && nReturnedBytes > 0)
+            {
+                status = true;
+                ldr = (PEB_LDR_DATA64)Marshal.PtrToStructure(
+                    pLdr,
+                    typeof(PEB_LDR_DATA64));
+            }
+            else
+            {
+                status = false;
+                ldr = new PEB_LDR_DATA64();
+            }
+
+            return status;
+        }
+
         public static ulong GetPeb64()
         {
             IntPtr pContext;
@@ -47,32 +149,60 @@ namespace HeavensGatePoC.Library
         }
 
 
-        public static Dictionary<string, ulong> Get64BitModuleEntries()
+        public static bool GetPeb64Data(
+            IntPtr hProcess,
+            ulong peb64Address,
+            out PEB64_PARTIAL peb64)
+        {
+            NTSTATUS ntstatus;
+            bool status;
+            int nBufferSize = Marshal.SizeOf(typeof(PEB64_PARTIAL));
+            IntPtr pPeb64Data = Marshal.AllocHGlobal(nBufferSize);
+
+            ntstatus = Syscall.NtReadVirtualMemory(
+                hProcess,
+                peb64Address,
+                pPeb64Data,
+                (uint)nBufferSize,
+                out uint nReturnedBytes);
+
+            if ((ntstatus == Win32Consts.STATUS_SUCCESS) && nReturnedBytes > 0)
+            {
+                status = true;
+                peb64 = (PEB64_PARTIAL)Marshal.PtrToStructure(
+                    pPeb64Data,
+                    typeof(PEB64_PARTIAL));
+            }
+            else
+            {
+                status = false;
+                peb64 = new PEB64_PARTIAL();
+            }
+
+            return status;
+        }
+
+
+        public static List<LDR_DATA_TABLE_ENTRY64> Get64BitModuleEntries(ulong peb64Address)
         {
             NTSTATUS ntstatus;
             PEB64_PARTIAL peb64;
             PEB_LDR_DATA64 pebLdrData64;
-            LDR_DATA_TABLE_ENTRY64_PARTIAL entry64;
+            LDR_DATA_TABLE_ENTRY64 entry64;
             ulong ldrAddress;
             ulong entryAddress;
             ulong currentEntryAddress;
-            ulong dllBaseAddress;
-            ulong stringAddress;
-            int nStringLength;
-            int nStringBufferSize;
             IntPtr pPeb64;
             IntPtr pLdr64;
             IntPtr pEntry64;
-            IntPtr pStringBuffer;
-            string moduleName;
             int nInMemoryOrderLinksOffset = Marshal.OffsetOf(
-                typeof(LDR_DATA_TABLE_ENTRY64_PARTIAL),
+                typeof(LDR_DATA_TABLE_ENTRY64),
                 "InMemoryOrderLinks").ToInt32();
             int nPeb64Size = Marshal.SizeOf(typeof(PEB64_PARTIAL));
             int nLdr64Size = Marshal.SizeOf(typeof(PEB_LDR_DATA64));
-            int nEntry64Size = Marshal.SizeOf(typeof(LDR_DATA_TABLE_ENTRY64_PARTIAL));
-            var entries = new Dictionary<string, ulong>();
-            ulong peb64Address = GetPeb64();
+            int nEntry64Size = Marshal.SizeOf(typeof(LDR_DATA_TABLE_ENTRY64));
+            var entries = new List<LDR_DATA_TABLE_ENTRY64>();
+            var baseAddressList = new List<ulong>();
 
             pPeb64 = Marshal.AllocHGlobal(nPeb64Size);
             ntstatus = Syscall.NtReadVirtualMemory(
@@ -112,41 +242,22 @@ namespace HeavensGatePoC.Library
                     pEntry64,
                     (uint)nEntry64Size,
                     IntPtr.Zero);
-                entry64 = (LDR_DATA_TABLE_ENTRY64_PARTIAL)Marshal.PtrToStructure(
+                entry64 = (LDR_DATA_TABLE_ENTRY64)Marshal.PtrToStructure(
                     pEntry64,
-                    typeof(LDR_DATA_TABLE_ENTRY64_PARTIAL));
-                dllBaseAddress = entry64.DllBase;
+                    typeof(LDR_DATA_TABLE_ENTRY64));
                 entryAddress = entry64.InMemoryOrderLinks.Flink - (ulong)nInMemoryOrderLinksOffset;
-                nStringLength = (int)entry64.FullDllName.Length;
-                stringAddress = entry64.FullDllName.Buffer;
                 Marshal.FreeHGlobal(pEntry64);
 
                 if (ntstatus == Win32Consts.STATUS_SUCCESS)
                 {
-                    nStringBufferSize = nStringLength + 2;
-                    pStringBuffer = Marshal.AllocHGlobal(nStringBufferSize);
-                    Marshal.Copy(new byte[nStringBufferSize], 0, pStringBuffer, nStringBufferSize);
-
-                    ntstatus = Syscall.NtReadVirtualMemory(
-                        new IntPtr(-1),
-                        stringAddress,
-                        pStringBuffer,
-                        (uint)nStringLength,
-                        IntPtr.Zero);
-
-                    moduleName = Path.GetFileName(Marshal.PtrToStringUni(pStringBuffer));
-                    Marshal.FreeHGlobal(pStringBuffer);
-
-                    if (ntstatus == Win32Consts.STATUS_SUCCESS)
-                    {
-                        if (entries.ContainsKey(moduleName))
-                            break;
-                        else if (dllBaseAddress != 0UL)
-                            entries.Add(moduleName, dllBaseAddress);
-                    }
-                    else
+                    if (baseAddressList.Contains(entry64.DllBase))
                     {
                         break;
+                    }
+                    else if (entry64.DllBase != 0UL)
+                    {
+                        baseAddressList.Add(entry64.DllBase);
+                        entries.Add(entry64);
                     }
                 }
                 else
@@ -156,6 +267,96 @@ namespace HeavensGatePoC.Library
             } while (true);
 
             return entries;
+        }
+
+
+        public static string ReadUnicodeString64(
+            IntPtr hProcess,
+            UNICODE_STRING64 unicodeString64)
+        {
+            NTSTATUS ntstatus;
+            string result;
+            int nBufferSize = (int)unicodeString64.MaximumLength;
+            IntPtr pUnicodeBuffer = Marshal.AllocHGlobal(nBufferSize);
+            Marshal.Copy(new byte[nBufferSize], 0, pUnicodeBuffer, nBufferSize);
+
+            ntstatus = Syscall.NtReadVirtualMemory(
+                hProcess,
+                unicodeString64.Buffer,
+                pUnicodeBuffer,
+                (uint)nBufferSize,
+                out uint nReturnedLength);
+
+            if ((ntstatus == Win32Consts.STATUS_SUCCESS) && (nReturnedLength > 0))
+                result = Marshal.PtrToStringUni(pUnicodeBuffer);
+            else
+                result = null;
+
+            return result;
+        }
+
+
+        public static bool ReadProcessParameters(
+            IntPtr hProcess,
+            PEB64_PARTIAL peb64,
+            out RTL_USER_PROCESS_PARAMETERS64 parameters,
+            out List<string> environments)
+        {
+            NTSTATUS ntstatus;
+            IntPtr pEnvironment;
+            IntPtr pUnicodeString;
+            string unicodeString;
+            int offset = 0;
+            int nBufferSize = Marshal.SizeOf(typeof(RTL_USER_PROCESS_PARAMETERS64));
+            IntPtr pParametersBuffer = Marshal.AllocHGlobal(nBufferSize);
+            environments = new List<string>();
+
+            ntstatus = Syscall.NtReadVirtualMemory(
+                hProcess,
+                peb64.ProcessParameters,
+                pParametersBuffer,
+                (uint)nBufferSize,
+                out uint nReturnedSize);
+
+            if ((ntstatus == Win32Consts.STATUS_SUCCESS) && (nReturnedSize > 0))
+            {
+                parameters = (RTL_USER_PROCESS_PARAMETERS64)Marshal.PtrToStructure(
+                    pParametersBuffer,
+                    typeof(RTL_USER_PROCESS_PARAMETERS64));
+            }
+            else
+            {
+                Marshal.FreeHGlobal(pParametersBuffer);
+                parameters = new RTL_USER_PROCESS_PARAMETERS64();
+
+                return false;
+            }
+
+            nBufferSize = (int)parameters.EnvironmentSize;
+            pEnvironment = Marshal.AllocHGlobal(nBufferSize);
+            Marshal.Copy(new byte[nBufferSize], 0, pEnvironment, nBufferSize);
+
+            ntstatus = Syscall.NtReadVirtualMemory(
+                hProcess,
+                parameters.Environment,
+                pEnvironment,
+                (uint)nBufferSize,
+                out nReturnedSize);
+
+            if ((ntstatus == Win32Consts.STATUS_SUCCESS) && (nReturnedSize > 0))
+            {
+                do
+                {
+                    pUnicodeString = new IntPtr(pEnvironment.ToInt32() + offset);
+                    unicodeString = Marshal.PtrToStringUni(pUnicodeString).Trim('\x00');
+                    environments.Add(unicodeString);
+                    offset += ((unicodeString.Length * 2) + 2);
+                } while (offset < nBufferSize);
+            }
+
+            Marshal.FreeHGlobal(pEnvironment);
+
+            return true;
         }
     }
 }

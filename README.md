@@ -279,6 +279,16 @@ On the other hand, Halo's Gate technique works for patched `NtCreateProcessEx` f
 
 * [https://speakerdeck.com/aaaddress1/rebuild-the-heavens-gate-from-32-bit-hell-back-to-heaven-wonderland](https://speakerdeck.com/aaaddress1/rebuild-the-heavens-gate-from-32-bit-hell-back-to-heaven-wonderland)
 
+* [http://blog.rewolf.pl/blog/?p=102](http://blog.rewolf.pl/blog/?p=102)
+
+* [https://www.mandiant.com/resources/blog/wow64-subsystem-internals-and-hooking-techniques](https://www.mandiant.com/resources/blog/wow64-subsystem-internals-and-hooking-techniques)
+
+* [https://www.malwaretech.com/2014/02/the-0x33-segment-selector-heavens-gate.html](https://www.malwaretech.com/2014/02/the-0x33-segment-selector-heavens-gate.html)
+
+* [https://int0h.wordpress.com/2009/12/24/the-power-of-wow64/](https://int0h.wordpress.com/2009/12/24/the-power-of-wow64/)
+
+* [https://modexp.wordpress.com/2015/11/19/dllpic-injection-on-windows-from-wow64-process/](https://modexp.wordpress.com/2015/11/19/dllpic-injection-on-windows-from-wow64-process/)
+
 ### Hell's Gate
 
 * [https://vxug.fakedoma.in/papers/VXUG/Exclusive/HellsGate.pdf](https://vxug.fakedoma.in/papers/VXUG/Exclusive/HellsGate.pdf)

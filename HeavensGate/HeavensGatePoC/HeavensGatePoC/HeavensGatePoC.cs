@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using HeavensGatePoC.Interop;
 using HeavensGatePoC.Library;
 
@@ -32,62 +31,123 @@ namespace HeavensGatePoC
             /*
              * Enumerate Drivers
              */
-            NTSTATUS ntstatus;
-            IntPtr pSystemInfo;
             ulong pPeb64;
-            Dictionary<string, ulong> x64ModuleLists;
-            PROCESS_BASIC_INFORMATION64 pbi;
-            int nBufferSize = Marshal.SizeOf(typeof(PROCESS_BASIC_INFORMATION64));
+            string pathName;
+            IntPtr hProcess = Process.GetCurrentProcess().Handle;
+            List<LDR_DATA_TABLE_ENTRY64> x64ModuleLists;
+
+            Console.WriteLine();
 
             pPeb64 = Utilities.GetPeb64();
-            x64ModuleLists = Utilities.Get64BitModuleEntries();
 
-            Console.WriteLine("[*] ntdll!_PEB64 @ 0x{0}", pPeb64.ToString("X16"));
-            Console.WriteLine("[+] Got 64bit modules.");
-            foreach (var mod in x64ModuleLists)
-                Console.WriteLine("    [*] 0x{0} : {1}", mod.Value.ToString("X16"), mod.Key);
-
-            Console.WriteLine("[>] Trying to get current process information.");
-
-            pSystemInfo = Marshal.AllocHGlobal(nBufferSize);
-            Helpers.ZeroMemory(pSystemInfo, nBufferSize);
-
-            ntstatus = Syscall.NtQueryInformationProcess(
-                Process.GetCurrentProcess().Handle,
-                PROCESS_INFORMATION_CLASS.ProcessBasicInformation,
-                pSystemInfo,
-                (uint)nBufferSize,
-                out uint NumberOfBytes);
-
-            if (ntstatus != Win32Consts.STATUS_SUCCESS)
+            if (!Utilities.GetPeb64Data(hProcess, pPeb64, out PEB64_PARTIAL peb64))
             {
-                Console.WriteLine("[-] Failed to get current process basic information.");
-                Console.WriteLine("    [*] NTSTATUS : 0x{0}", ntstatus.ToString("X8"));
+                Console.WriteLine("[-] Failed to read ntdll!_PEB.");
+
+                return;
             }
             else
             {
-                pbi = (PROCESS_BASIC_INFORMATION64)Marshal.PtrToStructure(
-                    pSystemInfo,
-                    typeof(PROCESS_BASIC_INFORMATION64));
-
-                Console.WriteLine("[+] Got current process basic information.");
-                Console.WriteLine("    [*] ExitStatus      : 0x{0}", pbi.ExitStatus.ToString("X8"));
-                Console.WriteLine("    [*] PebBaseAddress  : 0x{0}", pbi.PebBaseAddress.ToString("X8"));
-                Console.WriteLine("    [*] BasePriority    : {0}", pbi.BasePriority);
-                Console.WriteLine("    [*] UniqueProcessId : {0}", pbi.UniqueProcessId);
-                Console.WriteLine("    [*] Buffer Size     : {0} Bytes", NumberOfBytes);
-                Console.WriteLine("[*] Check information of this process.");
+                Console.WriteLine("ntdll!_PEB64 @ 0x{0}", pPeb64.ToString("X16"));
+                Console.WriteLine("    InheritedAddressSpace    : {0}", peb64.InheritedAddressSpace.ToString());
+                Console.WriteLine("    ReadImageFileExecOptions : {0}", peb64.ReadImageFileExecOptions.ToString());
+                Console.WriteLine("    BeingDebugged            : {0}", peb64.BeingDebugged.ToString());
+                Console.WriteLine("    ImageBaseAddress         : {0}", peb64.ImageBaseAddress.ToString("X16"));
+                Console.WriteLine("    Ldr                      : {0}", peb64.Ldr.ToString("X16"));
             }
 
-            Marshal.FreeHGlobal(pSystemInfo);
-
-            if (ntstatus == Win32Consts.STATUS_SUCCESS)
+            if (!Utilities.GetLdrData(hProcess, peb64, out PEB_LDR_DATA64 ldr))
             {
-                Console.Write("[*] Hit [ENTER] to exit this program.");
-                Console.ReadLine();
+                Console.WriteLine("[-] Failed to read ntdll!_PEB64.Ldr.");
+
+                return;
+            }
+            else
+            {
+                Console.WriteLine("    Ldr.Initialized          : {0}", ldr.Initialized.ToString());
+                Console.WriteLine(
+                        @"    Ldr.InInitializationOrderModuleList : {{ 0x{0} - 0x{1} }}",
+                        ldr.InInitializationOrderModuleList.Flink.ToString("X16"),
+                        ldr.InInitializationOrderModuleList.Blink.ToString("X16"));
+                Console.WriteLine(
+                    @"    Ldr.InLoadOrderModuleList           : {{ 0x{0} - 0x{1} }}",
+                    ldr.InLoadOrderModuleList.Flink.ToString("X16"),
+                    ldr.InLoadOrderModuleList.Blink.ToString("X16"));
+                Console.WriteLine(
+                    @"    Ldr.InMemoryOrderModuleList         : {{ 0x{0} - 0x{1} }}",
+                    ldr.InMemoryOrderModuleList.Flink.ToString("X16"),
+                    ldr.InMemoryOrderModuleList.Blink.ToString("X16"));
             }
 
-            Console.WriteLine("[*] Done.\n");
+            x64ModuleLists = Utilities.Get64BitModuleEntries(pPeb64);
+
+            if (x64ModuleLists.Count > 0)
+            {
+                Utilities.DumpInMemoryOrderModuleList(
+                    hProcess,
+                    x64ModuleLists,
+                    false,
+                    2);
+            }
+
+            Console.WriteLine("    SubSystemData     : 0x{0}", peb64.SubSystemData.ToString("X16"));
+            Console.WriteLine("    ProcessHeap       : 0x{0}", peb64.ProcessHeap.ToString("X16"));
+            Console.WriteLine("    ProcessParameters : 0x{0}", peb64.ProcessParameters.ToString("X16"));
+
+            if (Utilities.ReadProcessParameters(
+                hProcess,
+                peb64,
+                out RTL_USER_PROCESS_PARAMETERS64 parameters,
+                out List<string> environments))
+            {
+                pathName = Utilities.ReadUnicodeString64(hProcess, parameters.CurrentDirectory.DosPath);
+
+                if (!string.IsNullOrEmpty(pathName))
+                    Console.WriteLine("    CurrentDirectory  : '{0}'", pathName);
+                else
+                    Console.WriteLine("    CurrentDirectory  : '<null>'");
+
+                pathName = Utilities.ReadUnicodeString64(hProcess, parameters.WindowTitle);
+
+                if (!string.IsNullOrEmpty(pathName))
+                    Console.WriteLine("    WindowTitle       : '{0}'", pathName);
+                else
+                    Console.WriteLine("    WindowTitle       : '<null>'");
+
+                pathName = Utilities.ReadUnicodeString64(hProcess, parameters.ImagePathName);
+
+                if (!string.IsNullOrEmpty(pathName))
+                    Console.WriteLine("    ImageFile         : '{0}'", pathName);
+                else
+                    Console.WriteLine("    ImageFile         : '<null>'");
+
+                pathName = Utilities.ReadUnicodeString64(hProcess, parameters.CommandLine);
+
+                if (!string.IsNullOrEmpty(pathName))
+                    Console.WriteLine("    CommandLine       : '{0}'", pathName);
+                else
+                    Console.WriteLine("    CommandLine       : '<null>'");
+
+                pathName = Utilities.ReadUnicodeString64(hProcess, parameters.DllPath);
+
+                if (!string.IsNullOrEmpty(pathName))
+                    Console.WriteLine("    DllPath           : '{0}'", pathName);
+                else
+                    Console.WriteLine("    DllPath           : '<null>'");
+
+                if (environments.Count > 0)
+                {
+                    Console.WriteLine("    Environment:");
+
+                    foreach (var env in environments)
+                        Console.WriteLine("        {0}", env);
+                }
+            }
+
+            Console.WriteLine("[*] Done.");
+            Console.WriteLine("[*] Check this process (PID : {0}) with WinDbg or Process Explorer.", Process.GetCurrentProcess().Id);
+            Console.WriteLine("[*] To exit this program, hit [ENTER] key.");
+            Console.ReadLine();
         }
     }
 }

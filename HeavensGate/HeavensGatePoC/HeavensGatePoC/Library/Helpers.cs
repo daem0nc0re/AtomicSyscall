@@ -17,6 +17,43 @@ namespace HeavensGatePoC.Library
         }
 
 
+        public static string ConvertLargeIntegerToLocalTimeString(LARGE_INTEGER fileTime)
+        {
+            if (NativeMethods.FileTimeToSystemTime(in fileTime, out SYSTEMTIME systemTime))
+            {
+                if (NativeMethods.SystemTimeToTzSpecificLocalTime(
+                    IntPtr.Zero,
+                    in systemTime,
+                    out SYSTEMTIME localTime))
+                {
+                    return string.Format(
+                        "{0}/{1}/{2} {3}:{4}:{5}",
+                        localTime.wYear.ToString("D4"),
+                        localTime.wMonth.ToString("D2"),
+                        localTime.wDay.ToString("D2"),
+                        localTime.wHour.ToString("D2"),
+                        localTime.wMinute.ToString("D2"),
+                        localTime.wSecond.ToString("D2"));
+                }
+                else
+                {
+                    return string.Format(
+                        "{0}/{1}/{2} {3}:{4}:{5}",
+                        systemTime.wYear.ToString("D4"),
+                        systemTime.wMonth.ToString("D2"),
+                        systemTime.wDay.ToString("D2"),
+                        systemTime.wHour.ToString("D2"),
+                        systemTime.wMinute.ToString("D2"),
+                        systemTime.wSecond.ToString("D2"));
+                }
+            }
+            else
+            {
+                return "N/A";
+            }
+        }
+
+
         public static string GetWin32ErrorMessage(int code, bool isNtStatus)
         {
             int nReturnedLength;
