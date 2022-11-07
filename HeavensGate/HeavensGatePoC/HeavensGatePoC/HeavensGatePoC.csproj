@@ -53,6 +53,7 @@
     <Compile Include="Library\PeFile.cs" />
     <Compile Include="Library\PhysicalResolve.cs" />
     <Compile Include="Library\Syscall.cs" />
+    <Compile Include="Library\Utilities.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

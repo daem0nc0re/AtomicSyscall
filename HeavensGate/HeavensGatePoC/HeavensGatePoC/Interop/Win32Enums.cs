@@ -2,6 +2,12 @@
 
 namespace HeavensGatePoC.Interop
 {
+    internal enum BOOLEAN : byte
+    {
+        FALSE,
+        TRUE
+    }
+
     [Flags]
     internal enum FormatMessageFlags : uint
     {
