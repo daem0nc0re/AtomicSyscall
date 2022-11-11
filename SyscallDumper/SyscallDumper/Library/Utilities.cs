@@ -53,18 +53,7 @@ namespace SyscallDumper.Library
 
                         if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.I386)
                         {
-                            if (pe.SearchBytes(
-                                entry.Value,
-                                0x20,
-                                new byte[] { 0x0F, 0x34 }).Length > 0) // sysenter
-                            {
-                                if (pe.ReadByte(entry.Value) == 0xB8) // mov eax, 0x????
-                                {
-                                    syscallNumber = pe.ReadInt32(entry.Value, 1);
-                                    results.Add(entry.Key, syscallNumber);
-                                }
-                            }
-                            else if (pe.ReadByte(entry.Value) == 0xB8) // mov eax, 0x????
+                            if (pe.ReadByte(entry.Value) == 0xB8) // mov eax, 0x????
                             {
                                 syscallNumber = pe.ReadInt32(entry.Value, 1);
                                 results.Add(entry.Key, syscallNumber);
