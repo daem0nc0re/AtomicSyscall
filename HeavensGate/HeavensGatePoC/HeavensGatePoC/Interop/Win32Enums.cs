@@ -70,7 +70,7 @@ namespace HeavensGatePoC.Interop
         PAGE_TARGETS_NO_UPDATE = 0x40000000
     }
 
-    internal enum PROCESS_INFORMATION_CLASS
+    internal enum PROCESSINFOCLASS
     {
         ProcessBasicInformation = 0x00,
         ProcessQuotaLimits = 0x01,

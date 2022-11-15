@@ -21,7 +21,7 @@ namespace HeavensGatePoC.Library
          */
         public static NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
+            PROCESSINFOCLASS ProcessInformationClass,
             IntPtr ProcessInformation,
             uint ProcessInformationLength,
             out uint ReturnLength)
@@ -46,7 +46,7 @@ namespace HeavensGatePoC.Library
 
         public static NTSTATUS NtQueryInformationProcess(
             IntPtr ProcessHandle,
-            PROCESS_INFORMATION_CLASS ProcessInformationClass,
+            PROCESSINFOCLASS ProcessInformationClass,
             IntPtr ProcessInformation,
             uint ProcessInformationLength,
             IntPtr pReturnLength)
