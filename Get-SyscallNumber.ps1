@@ -82,8 +82,7 @@ function Get-ProcAddress {
             $ordinal = [System.Runtime.InteropServices.Marshal]::ReadInt16($addressOfNameOrdinals.ToInt64() + (2 * $index))
             $offset = [System.Runtime.InteropServices.Marshal]::ReadInt32($addressOfFunctions.ToInt64() + (4 * $ordinal))
             $functionAddress = [IntPtr]($Module.ToInt64() + $offset)
-        }
-        else {
+        } else {
             $ordinal = [System.Runtime.InteropServices.Marshal]::ReadInt16($addressOfNameOrdinals.ToInt32() + (2 * $index))
             $offset = [System.Runtime.InteropServices.Marshal]::ReadInt32($addressOfFunctions.ToInt32() + (4 * $ordinal))
             $functionAddress = [IntPtr]($Module.ToInt32() + $offset)
