@@ -171,8 +171,7 @@ function Get-SyscallNumber {
                 $functionBase = [IntPtr]($functionBase.ToInt64() - 0x10)
             }
         }
-    }
-    else {
+    } else {
         Write-Warning "Unsupported architecture."
 
         return -1
