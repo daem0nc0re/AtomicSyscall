@@ -138,8 +138,7 @@ function Get-SyscallNumber {
         for ($count = 0; $count -lt 0x10; $count++) {
             if ([System.Runtime.InteropServices.Marshal]::ReadByte($functionBase) -eq 0xB8) { # mov eax, 0x????
                 $syscallNumber = [System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase, 1) + $count
-
-                break;
+                break
             } else {
                 if ($isArm) {
                     $functionBase = [IntPtr]($functionBase.ToInt32() - 0x10)
@@ -152,8 +151,7 @@ function Get-SyscallNumber {
         for ($count = 0; $count -lt 0x10; $count++) {
             if ([System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase) -eq 0xB8D18B4C) { # mov r10, rcx; mov eax, 0x???? 
                 $syscallNumber = [System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase, 4) + $count
-
-                break;
+                break
             } else {
                 $functionBase = [IntPtr]($functionBase.ToInt64() - 0x20)
             }
@@ -164,8 +162,7 @@ function Get-SyscallNumber {
 
             if (($instruction -band 0xFFE0001F) -eq 0xD4000001) { # svc #0x??
                 $syscallNumber = (($instruction -shr 5) -band 0x0000FFFF) + $count
-
-                break;
+                break
             } else {
                 $functionBase = [IntPtr]($functionBase.ToInt64() - 0x10)
             }
