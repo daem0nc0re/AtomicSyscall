@@ -9,6 +9,7 @@ Tools and PoCs for Windows syscall investigation.
   - [SyscallDumper](#syscalldumper)
   - [SyscallPoCs](#syscallpocs)
   - [SyscallResolvers](#syscallresolvers)
+  - [Get-SyscallNumber.ps1](#get-syscallnumberps1)
   - [Reference](#reference)
   - [Acknowledgments](#acknowledgments)
 
@@ -256,6 +257,65 @@ Hell's Gate technique does not work for patched `NtCreateProcessEx` function.
 On the other hand, Halo's Gate technique works for patched `NtCreateProcessEx` function:
 
 ![syscallresolvers.png](./figures/syscallresolvers.png)
+
+
+## Get-SyscallNumber.ps1
+
+[Back to Top](#atomicsyscall)
+
+[Script](./Get-SyscallNumber.ps1)
+
+In this script, following 3 functions are implemented:
+
+* __`Get-ModuleHandle`__ : As the name implies, this function resolve loaded module's base address as `GetModuleHandle` API.
+
+* __`Get-ProcAddress`__ : As the name implies, this function resolve export function's address as `GetProcAddress` API.
+
+* __`Get-SyscallNumber`__ : This function resolve syscall number with Hell's Gate or Halo's Gate technique.
+
+If you want to resolve module base address such as `ntdll.dll`, set the module name as 1st arguments or `-ModuleName` option:
+
+```
+PS C:\> Import-Module C:\dev\Get-SyscallNumber.ps1
+PS C:\> Get-ModuleHandle ntdll.dll
+140720055189504
+PS C:\> (140720055189504).ToString("X16")
+00007FFBF0E70000
+PS C:\> Get-ModuleHandle -ModuleName kernel32.dll
+140720022028288
+PS C:\> (140720022028288).ToString("X16")
+00007FFBEEED0000
+PS C:\>
+```
+
+To resolve export function address in a module, set base address of the module and export function name for `Get-ProcAddress` function.
+The base address of the module should be specified with 1st argument or `-Module` option.
+The export function name should be specified with 2nd argument or `-ProcName` option as follows:
+
+```
+PS C:\> $ntdll = Get-ModuleHandle -ModuleName ntdll.dll
+PS C:\> Get-ProcAddress $ntdll NtCreateToken
+140720055839008
+PS C:\> (140720055839008).ToString("X16")
+00007FFBF0F0E920
+PS C:\> Get-ProcAddress -ProcName ntcreatetoken -Module $ntdll
+140720055839008
+PS C:\>
+```
+
+If you want to know syscall number, set the syscall name to 1st argument or `-SyscallName` option for `Get-SyscallNumber` function:
+
+```
+PS C:\> Get-SyscallNumber ntcreateuserprocess
+Syscall Number : 0xC8
+200
+PS C:\> Get-SyscallNumber -SyscallName ntcreateprocessex
+Syscall Number : 0x4D
+77
+PS C:\>
+```
+
+![getsyscallnumber.png](./figures/getsyscallnumber.png)
 
 
 ## Reference
