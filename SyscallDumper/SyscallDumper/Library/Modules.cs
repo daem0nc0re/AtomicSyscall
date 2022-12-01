@@ -7,6 +7,9 @@ namespace SyscallDumper.Library
 {
     internal class Modules
     {
+        /*
+         * private functions
+         */
         private static Dictionary<string, int> FilterTable(
             Dictionary<string, int> syscallTable,
             string filter)
@@ -24,7 +27,26 @@ namespace SyscallDumper.Library
         }
 
 
-        public static string GetSyscallTable(string filePath, string filter)
+        private static Dictionary<string, int> LookupSyscallNumber(
+            Dictionary<string, int> syscallTable,
+            int syscallNumber)
+        {
+            var filtered = new Dictionary<string, int>();
+
+            foreach (var entry in syscallTable)
+            {
+                if (entry.Value == syscallNumber)
+                    filtered.Add(entry.Key, entry.Value);
+            }
+
+            return filtered;
+        }
+
+
+        /*
+         * public functions
+         */
+        public static string GetSyscallTable(string filePath, string filter, int syscallNumber, string format)
         {
             Dictionary<string, int> table;
             var result = new StringBuilder();
@@ -37,15 +59,50 @@ namespace SyscallDumper.Library
                 return null;
             }
 
-            table = Utilities.DumpSyscallNumber(fullPath);
+            table = Utilities.DumpSyscallNumber(fullPath, out string moduleName);
 
             if (!string.IsNullOrEmpty(filter))
                 table = FilterTable(table, filter);
 
+            if (syscallNumber >= 0)
+                table = LookupSyscallNumber(table, syscallNumber);
+
             result.Append(string.Format("[Syscall Table from {0}]\n\n", fullPath));
             
             if (table.Count > 0)
-                result.Append(Helpers.BuildSyscallTableText(table));
+            {
+                if (Helpers.CompareIgnoreCase(format, "c"))
+                {
+                    if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
+                        result.Append(Helpers.BuildSyscallTableAsC(table, "NT_SYSCALLS"));
+                    else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
+                        result.Append(Helpers.BuildSyscallTableAsC(table, "NTGDI_SYSCALLS"));
+                    else
+                        result.Append(Helpers.BuildSyscallTableAsC(table, "SYSCALLS"));
+                }
+                else if (Helpers.CompareIgnoreCase(format, "cs"))
+                {
+                    if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
+                        result.Append(Helpers.BuildSyscallTableAsCSharp(table, "NT_SYSCALLS"));
+                    else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
+                        result.Append(Helpers.BuildSyscallTableAsCSharp(table, "NTGDI_SYSCALLS"));
+                    else
+                        result.Append(Helpers.BuildSyscallTableAsCSharp(table, "SYSCALLS"));
+                }
+                else if (Helpers.CompareIgnoreCase(format, "py"))
+                {
+                    if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
+                        result.Append(Helpers.BuildSyscallTableAsPython(table, "g_NtSyscalls"));
+                    else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
+                        result.Append(Helpers.BuildSyscallTableAsPython(table, "g_NtGdiSyscalls"));
+                    else
+                        result.Append(Helpers.BuildSyscallTableAsPython(table, "g_Syscalls"));
+                }
+                else
+                {
+                    result.Append(Helpers.BuildSyscallTableDefault(table));
+                }
+            }
 
             result.Append(string.Format("\n[*] Found {0} syscall(s).\n", table.Count));
 
@@ -92,8 +149,15 @@ namespace SyscallDumper.Library
             Console.WriteLine("    [*] Old File : {0}", oldFilePath);
             Console.WriteLine("    [*] New File : {0}", newFilePath);
 
-            oldTable = Utilities.DumpSyscallNumber(oldFilePath);
-            newTable = Utilities.DumpSyscallNumber(newFilePath);
+            oldTable = Utilities.DumpSyscallNumber(oldFilePath, out string oldModule);
+            newTable = Utilities.DumpSyscallNumber(newFilePath, out string newModule);
+
+            if (!Helpers.CompareIgnoreCase(oldModule, newModule))
+            {
+                Console.WriteLine("[-] Module names don't match.");
+
+                return null;
+            }
 
             if (!string.IsNullOrEmpty(filter))
             {
@@ -125,7 +189,7 @@ namespace SyscallDumper.Library
                 results.Append("################################################\n");
                 results.Append("#               DELETED SYSCALLS               #\n");
                 results.Append("################################################\n\n");
-                results.Append(Helpers.BuildSyscallTableText(deleted));
+                results.Append(Helpers.BuildSyscallTableDefault(deleted));
                 results.Append(string.Format("\n[*] Deleted {0} syscall(s).\n", deleted.Count));
             }
 
@@ -149,7 +213,7 @@ namespace SyscallDumper.Library
                 results.Append("################################################\n");
                 results.Append("#                 NEW SYSCALLS                 #\n");
                 results.Append("################################################\n\n");
-                results.Append(Helpers.BuildSyscallTableText(added));
+                results.Append(Helpers.BuildSyscallTableDefault(added));
                 results.Append(string.Format("\n[*] Added {0} syscall(s).\n", added.Count));
             }
 

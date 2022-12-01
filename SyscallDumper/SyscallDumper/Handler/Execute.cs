@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using SyscallDumper.Library;
 
 namespace SyscallDumper.Handler
@@ -14,7 +15,9 @@ namespace SyscallDumper.Handler
             string target_1 = options.GetValue("INPUT_DLL_1");
             string target_2 = options.GetValue("INPUT_DLL_2");
             string filter = options.GetValue("search");
+            string format = options.GetValue("format");
             string output = null;
+            int syscallNumber = -1;
 
             if (options.GetFlag("help"))
             {
@@ -37,6 +40,37 @@ namespace SyscallDumper.Handler
                 }
             }
 
+            if (!string.IsNullOrEmpty(options.GetValue("number")))
+            {
+                try
+                {
+                    if (Regex.IsMatch(options.GetValue("number"), @"^0x[0-9a-fA-F]+$"))
+                    {
+                        syscallNumber = Convert.ToInt32(options.GetValue("number"), 16);
+                    }
+                    else if (Regex.IsMatch(options.GetValue("number"), @"^[0-9]+$"))
+                    {
+                        syscallNumber = Convert.ToInt32(options.GetValue("number"), 10);
+                    }
+                    else
+                    {
+                        throw new InvalidDataException("Syscall number should be positive integer.");
+                    }
+                }
+                catch (InvalidDataException ex)
+                {
+                    Console.WriteLine("[!] {0}", ex.Message);
+
+                    return;
+                }
+                catch
+                {
+                    Console.WriteLine("[!] Failed to parse syscall number.");
+
+                    return;
+                }
+            }
+
             if (options.GetFlag("dump"))
             {
                 if (string.IsNullOrEmpty(target_1))
@@ -44,8 +78,8 @@ namespace SyscallDumper.Handler
                     Console.WriteLine("[*] No target is specified.");
                     Console.WriteLine("[>] Dumping from system default ntdll.dll and win32u.dll.");
 
-                    ntdll = Modules.GetSyscallTable(@"C:\Windows\System32\ntdll.dll", filter);
-                    win32u = Modules.GetSyscallTable(@"C:\Windows\System32\win32u.dll", filter);
+                    ntdll = Modules.GetSyscallTable(@"C:\Windows\System32\ntdll.dll", filter, syscallNumber, format);
+                    win32u = Modules.GetSyscallTable(@"C:\Windows\System32\win32u.dll", filter, syscallNumber, format);
 
                     if (string.IsNullOrEmpty(output))
                     {
@@ -72,7 +106,7 @@ namespace SyscallDumper.Handler
                 }
                 else
                 {
-                    result = Modules.GetSyscallTable(target_1, filter);
+                    result = Modules.GetSyscallTable(target_1, filter, syscallNumber, format);
 
                     if (string.IsNullOrEmpty(output))
                     {

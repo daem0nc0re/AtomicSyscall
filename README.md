@@ -28,8 +28,7 @@ See [README.md](./HeavensGate/README.md)
 This tool is to dump Windows syscall from `ntdll.dll` or `win32u.dll`:
 
 ```
-C:\Tools>SyscallDumper.exe
-
+C:\Tools>SyscallDumper.exe -h
 
 SyscallDumper - Tool to dump syscall.
 
@@ -38,13 +37,12 @@ Usage: SyscallDumper.exe [Options] [INPUT_DLL_1] [INPUT_DLL_2]
         -h, --help   : Displays this help message.
         -d, --dump   : Flag to dump syscall from ntdll.dll or win32u.dll.
         -D, --diff   : Flag to take diff between 2 dlls.
-        -s, --search : Specifies search filter (e.g. "-s createfile").
+        -f, --format : Specifies output format. "c" for C/C++, "cs" for CSharp, "py" for Python.
+        -n, --number : Specifies syscall number to lookup in decimal or hex.
         -o, --output : Specifies output file (e.g. "-o result.txt").
+        -s, --search : Specifies search filter (e.g. "-s createfile").
         INPUT_DLL_1  : Specifies path of ntdll.dll or win32u.dll. Older one in diffing.
         INPUT_DLL_2  : Specifies path of ntdll.dll or win32u.dll. Newer one in diffing.
-
-
-[!] Should be specified -d or -D option.
 ```
 
 To dump syscall numbers from ntdll.dll or win32u.dll, use `-d` (`--dump`) option.
@@ -143,6 +141,125 @@ c:\Tools>type result.txt
 
 [*] Found 18 syscall(s).
 [*] Filter String : "token"
+```
+
+Using `-n` (`--number`) option, you can lookup syscall name by syscall number as follows.
+If you want to specifies the syscall number in hex format, should be start with "0x".
+
+```
+C:\Tools>SyscallDumper.exe -d C:\dev\SyscallSamples\21H1x64\ntdll.dll -n 85
+
+[>] Loading C:\dev\SyscallSamples\21H1x64\ntdll.dll.
+[+] C:\dev\SyscallSamples\21H1x64\ntdll.dll is loaded successfully.
+    [*] Architecture : AMD64
+    [*] Image Name   : ntdll.dll
+[+] Got 470 syscall(s).
+
+[Syscall Table from C:\dev\SyscallSamples\21H1x64\ntdll.dll]
+
+----------------------------------------
+| Syscall Name | Number | Number (hex) |
+----------------------------------------
+| NtCreateFile | 85     | 0x0055       |
+----------------------------------------
+
+[*] Found 1 syscall(s).
+
+
+C:\Tools>SyscallDumper.exe -d C:\dev\SyscallSamples\21H1x64\ntdll.dll -n 0x55
+
+[>] Loading C:\dev\SyscallSamples\21H1x64\ntdll.dll.
+[+] C:\dev\SyscallSamples\21H1x64\ntdll.dll is loaded successfully.
+    [*] Architecture : AMD64
+    [*] Image Name   : ntdll.dll
+[+] Got 470 syscall(s).
+
+[Syscall Table from C:\dev\SyscallSamples\21H1x64\ntdll.dll]
+
+----------------------------------------
+| Syscall Name | Number | Number (hex) |
+----------------------------------------
+| NtCreateFile | 85     | 0x0055       |
+----------------------------------------
+
+[*] Found 1 syscall(s).
+```
+
+If you want to change output format, use `-f` (`--format`) option.
+Currently, C/C++ (`c`), CSharp (`cs`) and Python (`py`) are supported:
+
+```
+C:\Tools>SyscallDumper.exe -d C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll -f c
+
+[>] Loading C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll.
+[+] C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll is loaded successfully.
+    [*] Architecture : ARM64
+    [*] Image Name   : ntdll.dll
+[+] Got 486 syscall(s).
+
+[Syscall Table from C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll]
+
+enum NT_SYSCALLS
+{
+    NtAcceptConnectPort = 2,
+    NtAccessCheck = 0,
+    NtAccessCheckAndAuditAlarm = 41,
+
+--snip--
+
+    NtWriteVirtualMemory = 58,
+    NtYieldExecution = 70
+}
+
+[*] Found 486 syscall(s).
+
+
+
+C:\Tools>SyscallDumper.exe -d C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll -f cs
+
+[>] Loading C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll.
+[+] C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll is loaded successfully.
+    [*] Architecture : ARM64
+    [*] Image Name   : ntdll.dll
+[+] Got 486 syscall(s).
+
+[Syscall Table from C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll]
+
+public enum NT_SYSCALLS
+{
+    NtAcceptConnectPort = 2,
+    NtAccessCheck = 0,
+    NtAccessCheckAndAuditAlarm = 41,
+
+
+--snip--
+
+    NtWriteVirtualMemory = 58,
+    NtYieldExecution = 70
+}
+
+[*] Found 486 syscall(s).
+
+
+
+C:\Tools>SyscallDumper.exe -d C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll -f py
+
+[>] Loading C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll.
+[+] C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll is loaded successfully.
+    [*] Architecture : ARM64
+    [*] Image Name   : ntdll.dll
+[+] Got 486 syscall(s).
+
+[Syscall Table from C:\dev\SyscallSamples\Win11Arm64\ntdll-arm64.dll]
+
+g_NtSyscalls = {
+    "NtAcceptConnectPort": 2,
+    "NtAccessCheck": 0,
+    "NtAccessCheckAndAuditAlarm": 41,
+    "NtAccessCheckByType": 99,
+    "NtAccessCheckByTypeAndAuditAlarm": 89,
+
+--snip--
 ```
 
 To take difference between 2 DLL's syscall tables, use `-D` (`--diff`) option as follows:

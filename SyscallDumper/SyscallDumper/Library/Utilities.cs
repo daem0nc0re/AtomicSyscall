@@ -7,7 +7,7 @@ namespace SyscallDumper.Library
 {
     internal class Utilities
     {
-        public static Dictionary<string, int> DumpSyscallNumber(string filePath)
+        public static Dictionary<string, int> DumpSyscallNumber(string filePath, out string moduleName)
         {
             string imageName;
             int syscallNumber;
@@ -15,6 +15,7 @@ namespace SyscallDumper.Library
             var results = new Dictionary<string, int>();
             var rgx = new Regex(@"^Nt\S+$");
             var fullPath = Path.GetFullPath(filePath);
+            moduleName = null;
 
             if (!File.Exists(fullPath))
             {
@@ -30,6 +31,7 @@ namespace SyscallDumper.Library
                 using (var pe = new PeFile(fullPath))
                 {
                     imageName = pe.GetExportImageName();
+                    moduleName = imageName;
 
                     Console.WriteLine("[+] {0} is loaded successfully.", fullPath);
                     Console.WriteLine("    [*] Architecture : {0}", pe.Architecture);

@@ -81,7 +81,97 @@ namespace SyscallDumper.Library
         }
 
 
-        public static string BuildSyscallTableText(Dictionary<string, int> syscallTable)
+        public static string BuildSyscallTableAsC(Dictionary<string, int> syscallTable, string enumName)
+        {
+            var result = new StringBuilder();
+            var lines = new List<string>();
+
+            if ((syscallTable.Count == 0) || string.IsNullOrEmpty(enumName))
+                return null;
+
+            foreach (var entry in syscallTable)
+            {
+                lines.Add(string.Format("    {0} = {1}", entry.Key, entry.Value));
+            }
+
+            if (lines.Count == 0)
+                return null;
+
+            result.Append(string.Format("enum {0}\n{{\n", enumName));
+
+            if (lines.Count == 1)
+                result.Append(lines[0]);
+            else
+                result.Append(string.Join(",\n", lines));
+
+            result.Append("\n}\n");
+            lines.Clear();
+
+            return result.ToString();
+        }
+
+
+        public static string BuildSyscallTableAsCSharp(Dictionary<string, int> syscallTable, string enumName)
+        {
+            var result = new StringBuilder();
+            var lines = new List<string>();
+
+            if ((syscallTable.Count == 0) || string.IsNullOrEmpty(enumName))
+                return null;
+
+            foreach (var entry in syscallTable)
+            {
+                lines.Add(string.Format("    {0} = {1}", entry.Key, entry.Value));
+            }
+
+            if (lines.Count == 0)
+                return null;
+
+            result.Append(string.Format("public enum {0}\n{{\n", enumName));
+
+            if (lines.Count == 1)
+                result.Append(lines[0]);
+            else
+                result.Append(string.Join(",\n", lines));
+
+            result.Append("\n}\n");
+            lines.Clear();
+
+            return result.ToString();
+        }
+
+
+        public static string BuildSyscallTableAsPython(Dictionary<string, int> syscallTable, string enumName)
+        {
+            var result = new StringBuilder();
+            var lines = new List<string>();
+
+            if ((syscallTable.Count == 0) || string.IsNullOrEmpty(enumName))
+                return null;
+
+            foreach (var entry in syscallTable)
+            {
+                lines.Add(string.Format("    \"{0}\": {1}", entry.Key, entry.Value));
+            }
+
+            if (lines.Count == 0)
+                return null;
+
+            result.Append(string.Format("{0} = {{\n", enumName));
+
+            if (lines.Count == 1)
+                result.Append(lines[0]);
+            else
+                result.Append(string.Join(",\n", lines));
+
+            result.Append("\n}\n");
+            lines.Clear();
+
+            return result.ToString();
+        }
+
+
+        public static string BuildSyscallTableDefault(Dictionary<string, int> syscallTable)
         {
             string formatter;
             string delimiter;
@@ -136,6 +226,7 @@ namespace SyscallDumper.Library
 
             return result.ToString();
         }
+
 
         public static bool CompareIgnoreCase(string strA, string strB)
         {
