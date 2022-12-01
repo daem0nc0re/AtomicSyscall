@@ -38,7 +38,7 @@ Usage: SyscallDumper.exe [Options] [INPUT_DLL_1] [INPUT_DLL_2]
         -h, --help   : Displays this help message.
         -d, --dump   : Flag to dump syscall from ntdll.dll or win32u.dll.
         -D, --diff   : Flag to take diff between 2 dlls.
-        -f, --filter : Specifies search filter (e.g. "-f createfile").
+        -s, --search : Specifies search filter (e.g. "-s createfile").
         -o, --output : Specifies output file (e.g. "-o result.txt").
         INPUT_DLL_1  : Specifies path of ntdll.dll or win32u.dll. Older one in diffing.
         INPUT_DLL_2  : Specifies path of ntdll.dll or win32u.dll. Newer one in diffing.
@@ -100,11 +100,11 @@ C:\Tools>SyscallDumper.exe -d
 [*] Found 1258 syscall(s).
 ```
 
-If you want to filter syscall name from dump result, use `-f` (`--filter`) option.
+If you want to filter syscall name from dump result, use `-s` (`--search`) option.
 And you can save result to a file with `-o` (`--output`) option as follows:
 
 ```
-C:\Tools>SyscallDumper.exe -d C:\SyscallSamples\1809x64\ntdll.dll -f token -o result.txt
+C:\Tools>SyscallDumper.exe -d C:\SyscallSamples\1809x64\ntdll.dll -s token -o result.txt
 
 [>] Loading C:\SyscallSamples\1809x64\ntdll.dll.
 [+] C:\SyscallSamples\1809x64\ntdll.dll is loaded successfully.
