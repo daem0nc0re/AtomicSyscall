@@ -26,9 +26,9 @@ namespace SyscallDumper.Library
 
         public static string GetSyscallTable(string filePath, string filter)
         {
+            Dictionary<string, int> table;
             var result = new StringBuilder();
             var fullPath = Path.GetFullPath(filePath);
-            Dictionary<string, int> table;
 
             if (!File.Exists(fullPath))
             {
@@ -58,15 +58,14 @@ namespace SyscallDumper.Library
 
         public static string GetDiffTable(string oldFilePath, string newFilePath, string filter)
         {
-            var results = new StringBuilder();
             Dictionary<string, int> oldTable;
             Dictionary<string, int> newTable;
+            var results = new StringBuilder();
             var deleted = new Dictionary<string, int>();
             var modified = new Dictionary<string, int>();
             var added = new Dictionary<string, int>();
 
-            if (string.IsNullOrEmpty(oldFilePath) ||
-                string.IsNullOrEmpty(newFilePath))
+            if (string.IsNullOrEmpty(oldFilePath) || string.IsNullOrEmpty(newFilePath))
             {
                 Console.WriteLine("[-] Missing file name to diff.");
 

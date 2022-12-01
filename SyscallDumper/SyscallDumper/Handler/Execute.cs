@@ -8,12 +8,13 @@ namespace SyscallDumper.Handler
     {
         public static void Run(CommandLineParser options)
         {
-            string target_1 = options.GetValue("INPUT_DLL_1");
-            string target_2 = options.GetValue("INPUT_DLL_2");
-            string output = null;
             string result;
             string ntdll;
             string win32u;
+            string target_1 = options.GetValue("INPUT_DLL_1");
+            string target_2 = options.GetValue("INPUT_DLL_2");
+            string filter = options.GetValue("search");
+            string output = null;
 
             if (options.GetFlag("help"))
             {
@@ -43,12 +44,8 @@ namespace SyscallDumper.Handler
                     Console.WriteLine("[*] No target is specified.");
                     Console.WriteLine("[>] Dumping from system default ntdll.dll and win32u.dll.");
 
-                    ntdll = Modules.GetSyscallTable(
-                        @"C:\Windows\System32\ntdll.dll",
-                        options.GetValue("filter"));
-                    win32u = Modules.GetSyscallTable(
-                        @"C:\Windows\System32\win32u.dll",
-                        options.GetValue("filter"));
+                    ntdll = Modules.GetSyscallTable(@"C:\Windows\System32\ntdll.dll", filter);
+                    win32u = Modules.GetSyscallTable(@"C:\Windows\System32\win32u.dll", filter);
 
                     if (string.IsNullOrEmpty(output))
                     {
@@ -61,9 +58,7 @@ namespace SyscallDumper.Handler
 
                         try
                         {
-                            File.AppendAllText(
-                                output,
-                                string.Format("{0}\n\n{1}", ntdll, win32u));
+                            File.AppendAllText(output, string.Format("{0}\n\n{1}", ntdll, win32u));
                         }
                         catch
                         {
@@ -77,9 +72,7 @@ namespace SyscallDumper.Handler
                 }
                 else
                 {
-                    result = Modules.GetSyscallTable(
-                        target_1,
-                        options.GetValue("filter"));
+                    result = Modules.GetSyscallTable(target_1, filter);
 
                     if (string.IsNullOrEmpty(output))
                     {
@@ -122,10 +115,7 @@ namespace SyscallDumper.Handler
                     return;
                 }
 
-                result = Modules.GetDiffTable(
-                    target_1,
-                    target_2,
-                    options.GetValue("filter"));
+                result = Modules.GetDiffTable(target_1, target_2, filter);
 
                 if (string.IsNullOrEmpty(output))
                 {
@@ -138,9 +128,7 @@ namespace SyscallDumper.Handler
 
                     try
                     {
-                        File.AppendAllText(
-                            output,
-                            string.Format("{0}", result));
+                        File.AppendAllText(output, string.Format("{0}", result));
                     }
                     catch
                     {

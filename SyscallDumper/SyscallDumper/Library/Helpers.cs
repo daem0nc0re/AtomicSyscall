@@ -10,14 +10,14 @@ namespace SyscallDumper.Library
             Dictionary<string, int> syscallTableBase,
             Dictionary<string, int> syscallTableModified)
         {
-            var result = new StringBuilder();
-            var columnName = "Syscall Name";
-            var columnNumber = "Number";
-            var columnHexNumber = "Number (hex)";
             string formatter;
             string delimiter;
             string numberString;
             string hexNumberString;
+            var result = new StringBuilder();
+            var columnName = "Syscall Name";
+            var columnNumber = "Number";
+            var columnHexNumber = "Number (hex)";
             var maxNameLength = columnName.Length;
             var maxNumberLength = columnNumber.Length;
             var maxHexNumberLength = columnHexNumber.Length;
@@ -51,14 +51,10 @@ namespace SyscallDumper.Library
                 maxHexNumberLength);
             delimiter = string.Format(
                 "{0}\n",
-                new string('-', 10+ maxNameLength + maxNumberLength + maxHexNumberLength));
+                new string('-', 10 + maxNameLength + maxNumberLength + maxHexNumberLength));
 
             result.Append(delimiter);
-            result.Append(string.Format(
-                formatter,
-                columnName,
-                columnNumber,
-                columnHexNumber));
+            result.Append(string.Format(formatter, columnName, columnNumber, columnHexNumber));
             result.Append(delimiter);
 
             foreach (var name in syscallTableModified.Keys)
@@ -85,30 +81,24 @@ namespace SyscallDumper.Library
         }
 
 
-        public static string BuildSyscallTableText(
-            Dictionary<string, int> syscallTable)
+        public static string BuildSyscallTableText(Dictionary<string, int> syscallTable)
         {
-            var result = new StringBuilder();
-            var columnName = "Syscall Name";
-            var columnNumber = "Number";
-            var columnHexNumber = "Number (hex)";
             string formatter;
             string delimiter;
             string numberString;
             string hexNumberString;
+            var result = new StringBuilder();
+            var columnName = "Syscall Name";
+            var columnNumber = "Number";
+            var columnHexNumber = "Number (hex)";
             var maxNameLength = columnName.Length;
             var maxNumberLength = columnNumber.Length;
             var maxHexNumberLength = columnHexNumber.Length;
 
             foreach (var name in syscallTable.Keys)
             {
-                numberString = string.Format(
-                    "{0}",
-                    syscallTable[name]);
-
-                hexNumberString = string.Format(
-                    "0x{0}",
-                    syscallTable[name].ToString("X4"));
+                numberString = string.Format("{0}", syscallTable[name]);
+                hexNumberString = string.Format("0x{0}", syscallTable[name].ToString("X4"));
 
                 if (name.Length > maxNameLength)
                     maxNameLength = name.Length;
@@ -130,11 +120,7 @@ namespace SyscallDumper.Library
                 new string('-', 10 + maxNameLength + maxNumberLength + maxHexNumberLength));
 
             result.Append(delimiter);
-            result.Append(string.Format(
-                formatter,
-                columnName,
-                columnNumber,
-                columnHexNumber));
+            result.Append(string.Format(formatter, columnName, columnNumber, columnHexNumber));
             result.Append(delimiter);
 
             foreach (var entry in syscallTable)
@@ -151,11 +137,9 @@ namespace SyscallDumper.Library
             return result.ToString();
         }
 
-        public static bool CompareStringIgnoreCase(string stringA, string stringB)
+        public static bool CompareIgnoreCase(string strA, string strB)
         {
-            var comparison = StringComparison.OrdinalIgnoreCase;
-
-            return (string.Compare(stringA, stringB, comparison) == 0);
+            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
         }
     }
 }

@@ -17,7 +17,7 @@ namespace SyscallDumper
                 options.AddFlag(false, "h", "help", "Displays this help message.");
                 options.AddFlag(false, "d", "dump", "Flag to dump syscall from ntdll.dll or win32u.dll.");
                 options.AddFlag(false, "D", "diff", "Flag to take diff between 2 dlls.");
-                options.AddParameter(false, "f", "filter", null, "Specifies search filter (e.g. \"-f createfile\").");
+                options.AddParameter(false, "s", "search", null, "Specifies search filter (e.g. \"-s createfile\").");
                 options.AddParameter(false, "o", "output", null, "Specifies output file (e.g. \"-o result.txt\").");
                 options.AddArgument(false, "INPUT_DLL_1", "Specifies path of ntdll.dll or win32u.dll. Older one in diffing.");
                 options.AddArgument(false, "INPUT_DLL_2", "Specifies path of ntdll.dll or win32u.dll. Newer one in diffing.");
@@ -28,15 +28,11 @@ namespace SyscallDumper
             catch (InvalidOperationException ex)
             {
                 Console.WriteLine(ex.Message);
-
-                return;
             }
             catch (ArgumentException ex)
             {
                 options.GetHelp();
                 Console.WriteLine(ex.Message);
-
-                return;
             }
         }
     }

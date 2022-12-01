@@ -7,15 +7,14 @@ namespace SyscallDumper.Library
 {
     internal class Utilities
     {
-        public static Dictionary<string, int> DumpSyscallNumber(
-            string filePath)
+        public static Dictionary<string, int> DumpSyscallNumber(string filePath)
         {
-            var results = new Dictionary<string, int>();
-            var rgx = new Regex(@"^Nt\S+$");
-            var fullPath = Path.GetFullPath(filePath);
             string imageName;
             int syscallNumber;
             Dictionary<string, IntPtr> exports;
+            var results = new Dictionary<string, int>();
+            var rgx = new Regex(@"^Nt\S+$");
+            var fullPath = Path.GetFullPath(filePath);
 
             if (!File.Exists(fullPath))
             {
@@ -36,8 +35,8 @@ namespace SyscallDumper.Library
                     Console.WriteLine("    [*] Architecture : {0}", pe.Architecture);
                     Console.WriteLine("    [*] Image Name   : {0}", imageName);
 
-                    if (!Helpers.CompareStringIgnoreCase(imageName, "ntdll.dll") &&
-                        !Helpers.CompareStringIgnoreCase(imageName, "win32u.dll"))
+                    if (!Helpers.CompareIgnoreCase(imageName, "ntdll.dll") &&
+                        !Helpers.CompareIgnoreCase(imageName, "win32u.dll"))
                     {
                         Console.WriteLine("[-] Loaded file is not ntdll.dll or win32u.dll.");
 
