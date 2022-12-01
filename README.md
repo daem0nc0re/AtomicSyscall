@@ -38,7 +38,7 @@ Usage: SyscallDumper.exe [Options] [INPUT_DLL_1] [INPUT_DLL_2]
         -d, --dump   : Flag to dump syscall from ntdll.dll or win32u.dll.
         -D, --diff   : Flag to take diff between 2 dlls.
         -f, --format : Specifies output format. "c" for C/C++, "cs" for CSharp, "py" for Python.
-        -n, --number : Specifies syscall number to lookup in decimal or hex.
+        -n, --number : Specifies syscall number to lookup in decimal or hex format.
         -o, --output : Specifies output file (e.g. "-o result.txt").
         -s, --search : Specifies search filter (e.g. "-s createfile").
         INPUT_DLL_1  : Specifies path of ntdll.dll or win32u.dll. Older one in diffing.
