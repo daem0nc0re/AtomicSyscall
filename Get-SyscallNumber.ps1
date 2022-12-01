@@ -38,10 +38,10 @@ function Get-ProcAddress {
     $addressOfNames = [IntPtr]::Zero
     $addressOfNameOrdinals = [IntPtr]::Zero
     $namePointer = [IntPtr]::Zero
-    $index = 0
+    $index = -1
 
     if ([System.Runtime.InteropServices.Marshal]::ReadInt16($Module) -ne 0x5A4D) {
-        return $functionAddress
+        return [IntPtr]::Zero
     }
 
     if ([IntPtr]::Size -eq 8) {
@@ -77,7 +77,7 @@ function Get-ProcAddress {
         }
     }
 
-    if ($index -ne 0) {
+    if ($index -ne -1) {
         if ([IntPtr]::Size -eq 8) {
             $ordinal = [System.Runtime.InteropServices.Marshal]::ReadInt16($addressOfNameOrdinals.ToInt64() + (2 * $index))
             $offset = [System.Runtime.InteropServices.Marshal]::ReadInt32($addressOfFunctions.ToInt64() + (4 * $ordinal))
@@ -101,76 +101,81 @@ function Get-SyscallNumber {
         [string]$SyscallName
     )
 
+    $moduleNames = @("ntdll.dll", "win32u.dll")
     $moduleName = $null
     $syscallNumber = -1;
 
-    if ($SyscallName -match "^NtGdi\S+$") {
-        $moduleName = "win32u.dll"
-    } elseif ($SyscallName -match "^Nt\S+$") {
-        $moduleName = "ntdll.dll"
-    } else {
-        Write-Warning "Syscall name should be start with `"Nt`" or `"NtGdi`"."
+    if ($SyscallName -notmatch "^Nt\S+$") {
+        Write-Warning "Syscall name should be start with `"Nt`"."
 
         return -1
     }
 
-    $moduleBase = Get-ModuleHandle $moduleName
+    foreach ($moduleName in $moduleNames)
+    {
+        $moduleBase = Get-ModuleHandle $moduleName
 
-    if ($moduleBase -eq [IntPtr]::Zero) {
-        Write-Warning "Failed to resolve module base."
+        if ($moduleBase -eq [IntPtr]::Zero) {
+            Write-Warning "Failed to resolve module base."
+            break
+        }
 
-        return -1
-    }
+        $functionBase = Get-ProcAddress $moduleBase $SyscallName
 
-    $functionBase = Get-ProcAddress $moduleBase $SyscallName
+        if ($functionBase -eq [IntPtr]::Zero) {
+            continue
+        }
 
-    if ($functionBase -eq [IntPtr]::Zero) {
-        Write-Warning "Failed to resolve the specified syscall name."
+        $architecture = [System.Environment]::GetEnvironmentVariable("PROCESSOR_ARCHITECTURE")
 
-        return -1
-    }
+        if ($architecture -ieq "x86") {
+            $isArm = [System.IO.Directory]::Exists("C:\Windows\SysArm32")
 
-    $architecture = [System.Environment]::GetEnvironmentVariable("PROCESSOR_ARCHITECTURE")
-
-    if ($architecture -ieq "x86") {
-        $isArm = [System.IO.Directory]::Exists("C:\Windows\SysArm32")
-
-        for ($count = 0; $count -lt 0x10; $count++) {
-            if ([System.Runtime.InteropServices.Marshal]::ReadByte($functionBase) -eq 0xB8) { # mov eax, 0x????
-                $syscallNumber = [System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase, 1) + $count
-                break
-            } else {
-                if ($isArm) {
-                    $functionBase = [IntPtr]($functionBase.ToInt32() - 0x10)
+            for ($count = 0; $count -lt 0x10; $count++) {
+                if ([System.Runtime.InteropServices.Marshal]::ReadByte($functionBase) -eq 0xB8) { # mov eax, 0x????
+                    $syscallNumber = [System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase, 1) + $count
+                    break
                 } else {
-                    $functionBase = [IntPtr]($functionBase.ToInt32() - 0x20)
+                    if ($isArm) {
+                        $functionBase = [IntPtr]($functionBase.ToInt32() - 0x10)
+                    } else {
+                        $functionBase = [IntPtr]($functionBase.ToInt32() - 0x20)
+                    }
                 }
             }
-        }
-    } elseif ($architecture -ieq "AMD64") {
-        for ($count = 0; $count -lt 0x10; $count++) {
-            if ([System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase) -eq 0xB8D18B4C) { # mov r10, rcx; mov eax, 0x???? 
-                $syscallNumber = [System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase, 4) + $count
-                break
-            } else {
-                $functionBase = [IntPtr]($functionBase.ToInt64() - 0x20)
+        } elseif ($architecture -ieq "AMD64") {
+            for ($count = 0; $count -lt 0x10; $count++) {
+                if ([System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase) -eq 0xB8D18B4C) { # mov r10, rcx; mov eax, 0x???? 
+                    $syscallNumber = [System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase, 4) + $count
+                    break
+                } else {
+                    $functionBase = [IntPtr]($functionBase.ToInt64() - 0x20)
+                }
             }
-        }
-    } elseif ($architecture -ieq "ARM64") {
-        for ($count = 0; $count -lt 0x10; $count++) {
-            $instruction = [System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase)
+        } elseif ($architecture -ieq "ARM64") {
+            for ($count = 0; $count -lt 0x10; $count++) {
+                $instruction = [System.Runtime.InteropServices.Marshal]::ReadInt32($functionBase)
 
-            if (($instruction -band 0xFFE0001F) -eq 0xD4000001) { # svc #0x??
-                $syscallNumber = (($instruction -shr 5) -band 0x0000FFFF) + $count
-                break
-            } else {
-                $functionBase = [IntPtr]($functionBase.ToInt64() - 0x10)
+                if (($instruction -band 0xFFE0001F) -eq 0xD4000001) { # svc #0x??
+                    $syscallNumber = (($instruction -shr 5) -band 0x0000FFFF) + $count
+                    break
+                } else {
+                    $functionBase = [IntPtr]($functionBase.ToInt64() - 0x10)
+                }
             }
+        } else {
+            Write-Warning "Unsupported architecture."
+            break
         }
-    } else {
-        Write-Warning "Unsupported architecture."
 
-        return -1
+        if ($syscallNumber -ne -1) {
+            break
+        }
+    }
+
+    if ($functionBase -eq [IntPtr]::Zero)
+    {
+        Write-Warning "Failed to resolve the specified syscall name."
     }
 
     if ($syscallNumber -ne -1) {
