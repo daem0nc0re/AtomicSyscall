@@ -1,5 +1,5 @@
 function Get-ModuleHandle {
-    Param(
+    Param (
         [OutputType([IntPtr])]
 
         [Parameter(Mandatory = $true, Position = 0)]
@@ -21,7 +21,7 @@ function Get-ModuleHandle {
 
 
 function Get-ProcAddress {
-    Param(
+    Param (
         [OutputType([IntPtr])]
 
         [Parameter(Mandatory = $true, Position = 0)]
@@ -94,7 +94,7 @@ function Get-ProcAddress {
 
 
 function Get-SyscallNumber {
-    Param(
+    Param (
         [OutputType([Int32])]
 
         [Parameter(Mandatory = $true, Position = 0)]
@@ -111,8 +111,7 @@ function Get-SyscallNumber {
         return -1
     }
 
-    foreach ($moduleName in $moduleNames)
-    {
+    foreach ($moduleName in $moduleNames) {
         $moduleBase = Get-ModuleHandle $moduleName
 
         if ($moduleBase -eq [IntPtr]::Zero) {
@@ -173,8 +172,7 @@ function Get-SyscallNumber {
         }
     }
 
-    if ($functionBase -eq [IntPtr]::Zero)
-    {
+    if ($functionBase -eq [IntPtr]::Zero) {
         Write-Warning "Failed to resolve the specified syscall name."
     }
 
