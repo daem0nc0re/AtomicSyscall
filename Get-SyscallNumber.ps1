@@ -38,7 +38,6 @@ function Get-ProcAddress {
     $addressOfNames = [IntPtr]::Zero
     $addressOfNameOrdinals = [IntPtr]::Zero
     $namePointer = [IntPtr]::Zero
-    $index = -1
 
     if ([System.Runtime.InteropServices.Marshal]::ReadInt16($Module) -ne 0x5A4D) {
         return [IntPtr]::Zero
@@ -72,19 +71,15 @@ function Get-ProcAddress {
         $entryName = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($namePointer)
 
         if ($entryName -ieq $ProcName) {
-            $index = $counter
+            $ordinal = [System.Runtime.InteropServices.Marshal]::ReadInt16($addressOfNameOrdinals, 2 * $counter)
+            $offset = [System.Runtime.InteropServices.Marshal]::ReadInt32($addressOfFunctions, 4 * $ordinal)
+
+            if ([IntPtr]::Size -eq 8) {
+                $functionAddress = [IntPtr]($Module.ToInt64() + $offset)
+            } else {
+                $functionAddress = [IntPtr]($Module.ToInt32() + $offset)
+            }
             break
-        }
-    }
-
-    if ($index -ne -1) {
-        $ordinal = [System.Runtime.InteropServices.Marshal]::ReadInt16($addressOfNameOrdinals, 2 * $index)
-        $offset = [System.Runtime.InteropServices.Marshal]::ReadInt32($addressOfFunctions, 4 * $ordinal)
-
-        if ([IntPtr]::Size -eq 8) {
-            $functionAddress = [IntPtr]($Module.ToInt64() + $offset)
-        } else {
-            $functionAddress = [IntPtr]($Module.ToInt32() + $offset)
         }
     }
 
