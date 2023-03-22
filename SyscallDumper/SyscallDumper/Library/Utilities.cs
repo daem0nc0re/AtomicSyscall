@@ -88,21 +88,15 @@ namespace SyscallDumper.Library
                         }
                     }
                 }
+
+                if (results.Count > 0)
+                    Console.WriteLine("[+] Got {0} syscall(s).", results.Count);
+                else
+                    Console.WriteLine("[-] No syscall.");
             }
             catch (InvalidDataException ex)
             {
                 Console.WriteLine("[!] {0}\n", ex.Message);
-
-                return results;
-            }
-
-            if (results.Count > 0)
-            {
-                Console.WriteLine("[+] Got {0} syscall(s).", results.Count);
-            }
-            else
-            {
-                Console.WriteLine("[-] No syscall.");
             }
 
             return results;
