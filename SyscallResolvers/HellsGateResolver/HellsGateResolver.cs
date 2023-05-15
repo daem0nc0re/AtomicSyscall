@@ -20,6 +20,7 @@ namespace HellsGateResolver
             }
 
             string target;
+            var status = false;
 
             if (args[0].IndexOf("Nt", StringComparison.OrdinalIgnoreCase) == 0)
             {
@@ -41,15 +42,18 @@ namespace HellsGateResolver
                     target,
                     StringComparison.OrdinalIgnoreCase) == 0)
                 {
+                    status = true;
                     Console.WriteLine("[+] Found.");
-                    Console.WriteLine("    |-> Syscall Name   : {0}", entry.Key);
-                    Console.WriteLine("    |-> Syscall Number : {0} (0x{1})\n", entry.Value, entry.Value.ToString("X"));
-
-                    return;
+                    Console.WriteLine("    [*] Syscall Name   : {0}", entry.Key);
+                    Console.WriteLine("    [*] Syscall Number : {0} (0x{1})", entry.Value, entry.Value.ToString("X"));
+                    break;
                 }
             }
 
-            Console.WriteLine("[-] Failed to resolve syscall number.\n");
+            if (!status)
+                Console.WriteLine("[-] Failed to resolve syscall number.");
+
+            Console.WriteLine("[*] Done.\n");
         }
     }
 }
