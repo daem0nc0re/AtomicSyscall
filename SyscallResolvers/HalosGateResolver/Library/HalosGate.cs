@@ -560,103 +560,80 @@ namespace HalosGateResolver.Library
         }
 
 
-        public static Dictionary<string, int> ResolveSyscallNumber(string syscallName)
+        public static int ResolveSyscallNumber(ref string syscallName)
         {
-            var results = new Dictionary<string, int>();
+            int nSyscallNumber = -1;
             IntPtr pBaseAddress = IntPtr.Zero;
+            string addressFormat = Environment.Is64BitProcess ? "X16" : "X8";
 
             if (functionTable.Count == 0)
-            {
                 functionTable = ListNtFunctionTableFromNtdll();
-            }
 
-            if (functionTable.Count == 0)
+            if (functionTable.Count > 0)
+            {
+                do
+                {
+                    foreach (var entry in functionTable)
+                    {
+                        if (string.Compare(
+                            entry.Key,
+                            syscallName,
+                            StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            syscallName = entry.Key;
+                            pBaseAddress = entry.Value;
+                            Console.WriteLine("[+] {0} @ 0x{1}", syscallName, pBaseAddress.ToString(addressFormat));
+                        }
+                    }
+
+                    if (pBaseAddress == IntPtr.Zero)
+                    {
+                        Console.WriteLine("[-] Failed to specify target function name or no entries.");
+                        break;
+                    }
+
+                    for (var count = 0; count < 0x10; count++)
+                    {
+                        pBaseAddress = new IntPtr(pBaseAddress.ToInt64() - 0x20 * count);
+
+                        if (count == 0)
+                        {
+                            Console.WriteLine(
+                                "[>] Checking code for {0} (0x{1}).",
+                                syscallName,
+                                pBaseAddress.ToString(addressFormat));
+                        }
+                        else
+                        {
+                            Console.WriteLine(
+                                "[>] Checking previous NT function's code (0x{1}).",
+                                syscallName,
+                                pBaseAddress.ToString(addressFormat));
+                        }
+
+                        if (Environment.Is64BitOperatingSystem && Marshal.ReadByte(pBaseAddress, 3) == 0xB8)
+                        {
+                            nSyscallNumber = Marshal.ReadInt32(pBaseAddress, 4) + count;
+                            break;
+                        }
+                        else if (Environment.Is64BitOperatingSystem && Marshal.ReadByte(pBaseAddress, 1) == 0xB8)
+                        {
+                            nSyscallNumber = Marshal.ReadInt32(pBaseAddress, 4) + count;
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("[-] Target NT function's code may be patched.");
+                        }
+                    }
+                } while (false);
+            }
+            else
             {
                 Console.WriteLine("[-] Failed to get Nt function table.");
-
-                return results;
             }
 
-            foreach (var entry in functionTable)
-            {
-                if (string.Compare(
-                    entry.Key,
-                    syscallName,
-                    StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    syscallName = entry.Key;
-                    pBaseAddress = entry.Value;
-
-                    if (Environment.Is64BitOperatingSystem)
-                        Console.WriteLine("[+] {0} @ 0x{1}", syscallName, pBaseAddress.ToString("X16"));
-                    else
-                        Console.WriteLine("[+] {0} @ 0x{1}", syscallName, pBaseAddress.ToString("X8"));
-                }
-            }
-
-            if (pBaseAddress == IntPtr.Zero)
-            {
-                Console.WriteLine("[-] Failed to specify target function name or no entries.");
-
-                return results;
-            }
-
-            for (var count = 0; count < 0x10; count++)
-            {
-                pBaseAddress = new IntPtr(pBaseAddress.ToInt64() - 0x20 * count);
-
-                if (count == 0 && Environment.Is64BitOperatingSystem)
-                {
-                    Console.WriteLine(
-                        "[>] Checking code for {0} (0x{1}).",
-                        syscallName,
-                        pBaseAddress.ToString("X16"));
-                }
-                else if (count == 0 && !Environment.Is64BitOperatingSystem)
-                {
-                    Console.WriteLine(
-                        "[>] Checking code for {0} (0x{1}).",
-                        syscallName,
-                        pBaseAddress.ToString("X8"));
-                }
-                else if (Environment.Is64BitOperatingSystem)
-                {
-                    Console.WriteLine(
-                        "[>] Checking previous NT function's code (0x{1}).",
-                        syscallName,
-                        pBaseAddress.ToString("X16"));
-                }
-                else
-                {
-                    Console.WriteLine(
-                        "[>] Checking previous NT function's code (0x{1}).",
-                        syscallName,
-                        pBaseAddress.ToString("X8"));
-                }
-
-                if (Environment.Is64BitOperatingSystem &&
-                    Marshal.ReadByte(pBaseAddress, 3) == 0xB8)
-                {
-                    results.Add(
-                        syscallName,
-                        Marshal.ReadInt32(pBaseAddress, 4) + count);
-                    break;
-                }
-                else if (Environment.Is64BitOperatingSystem &&
-                    Marshal.ReadByte(pBaseAddress, 1) == 0xB8)
-                {
-                    results.Add(
-                        syscallName,
-                        Marshal.ReadInt32(pBaseAddress, 4) + count);
-                    break;
-                }
-                else
-                {
-                    Console.WriteLine("[-] Target NT function's code may be patched.");
-                }
-            }
-
-            return results;
+            return nSyscallNumber;
         }
 
 
