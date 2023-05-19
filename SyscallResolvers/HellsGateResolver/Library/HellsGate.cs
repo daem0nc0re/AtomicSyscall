@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace HellsGateResolver.Library
 {
-    class HellsGate
+    internal class HellsGate
     {
         /*
          * Definisions for PE header

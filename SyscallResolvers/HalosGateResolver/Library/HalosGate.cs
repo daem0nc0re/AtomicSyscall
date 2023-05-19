@@ -484,7 +484,7 @@ namespace HalosGateResolver.Library
             var dosHeader = (IMAGE_DOS_HEADER)Marshal.PtrToStructure(
                 hModule,
                 typeof(IMAGE_DOS_HEADER));
-            var pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew); 
+            var pNtHeader = new IntPtr(hModule.ToInt64() + dosHeader.e_lfanew);
             var arch = (ushort)Marshal.ReadInt16(new IntPtr(
                 pNtHeader.ToInt64() +
                 Marshal.SizeOf(typeof(int))));
@@ -564,7 +564,7 @@ namespace HalosGateResolver.Library
         {
             var results = new Dictionary<string, int>();
             IntPtr pBaseAddress = IntPtr.Zero;
-            
+
             if (functionTable.Count == 0)
             {
                 functionTable = ListNtFunctionTableFromNtdll();

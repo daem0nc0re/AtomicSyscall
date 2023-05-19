@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using HellsGateResolver.Library;
+using HellsGateResolver.Handler;
 
 namespace HellsGateResolver
 {
@@ -8,52 +7,25 @@ namespace HellsGateResolver
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("\n--[ Hell's Gate syscall number resolver\n");
+            var options = new CommandLineParser();
 
-            if (args.Length == 0)
+            try
             {
-                Console.WriteLine(
-                    "Usage: {0} <Syscall Name in ntdll.dll>\n",
-                    AppDomain.CurrentDomain.FriendlyName);
-
-                return;
+                options.SetTitle("HellsGateResolver - Tool to resolve syscall number with Hell's Gate techniques.");
+                options.AddFlag(false, "h", "help", "Displays this help message.");
+                options.AddParameter(true, "n", "name", null, "Specifies syscall name to resolve.");
+                options.Parse(args);
+                Execute.Run(options);
             }
-
-            string target;
-            var status = false;
-
-            if (args[0].IndexOf("Nt", StringComparison.OrdinalIgnoreCase) == 0)
+            catch (InvalidOperationException ex)
             {
-                target = args[0];
+                Console.WriteLine(ex.Message);
             }
-            else
+            catch (ArgumentException ex)
             {
-                Console.WriteLine("[-] Syscall name should be start with \"Nt\".");
-
-                return;
+                options.GetHelp();
+                Console.WriteLine(ex.Message);
             }
-
-            Dictionary<string, int> table = HellsGate.DumpSyscallNumberFromNtdll();
-
-            foreach (var entry in table)
-            {
-                if (string.Compare(
-                    entry.Key,
-                    target,
-                    StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    status = true;
-                    Console.WriteLine("[+] Found.");
-                    Console.WriteLine("    [*] Syscall Name   : {0}", entry.Key);
-                    Console.WriteLine("    [*] Syscall Number : {0} (0x{1})", entry.Value, entry.Value.ToString("X"));
-                    break;
-                }
-            }
-
-            if (!status)
-                Console.WriteLine("[-] Failed to resolve syscall number.");
-
-            Console.WriteLine("[*] Done.\n");
         }
     }
 }
