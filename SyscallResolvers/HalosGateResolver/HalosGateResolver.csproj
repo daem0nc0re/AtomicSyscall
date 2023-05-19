@@ -46,7 +46,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HalosGateResolver.cs" />
+    <Compile Include="Handler\CommandLineParser.cs" />
+    <Compile Include="Handler\Execute.cs" />
     <Compile Include="Library\HalosGate.cs" />
+    <Compile Include="Library\Modules.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

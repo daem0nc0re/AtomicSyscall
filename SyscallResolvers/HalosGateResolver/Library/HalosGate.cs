@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace HalosGateResolver.Library
 {
-    class HalosGate
+    internal class HalosGate
     {
         /*
          * Definisions for PE header
