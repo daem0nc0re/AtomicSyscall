@@ -368,12 +368,143 @@ The purpose of this project is to help to learn how in-memory syscall number res
 | :--- | :--- |
 | [HellsGateResolver](./SyscallResolvers/HellsGateResolver) | This PoC resolves the syscall numbers in ntdll.dll by the Hell's Gate technique. Not works for functions patched with anti-virus products. |
 | [HalosGateResolver](./SyscallResolvers/HalosGateResolver) | This PoC resolves the syscall numbers in ntdll.dll by the Halo's Gate technique. |
+| [InitialProcessResolver](./SyscallResolvers/InitialProcessResolver) | This PoC resolves syscall numbers in ntdll.dll from initial process which created by `NtCreateUserProcess`. |
 
 The following figure shows the difference between Hell's Gate and Halo's Gate in anti-virus software installed environment.
 Hell's Gate technique does not work for patched `NtCreateProcessEx` function.
 On the other hand, Halo's Gate technique works for patched `NtCreateProcessEx` function:
 
 ![syscallresolvers.png](./figures/syscallresolvers.png)
+
+In some anti-virus software installed machine, some ntdll.dll code is hooked as following debugger output:
+
+```
+0:001> u ntdll!ntcreateprocessex
+ntdll!NtCreateProcessEx:
+00007fff`b33ef700 e9930a1800      jmp     00007fff`b3570198
+00007fff`b33ef705 cc              int     3
+00007fff`b33ef706 cc              int     3
+00007fff`b33ef707 cc              int     3
+00007fff`b33ef708 f604250803fe7f01 test    byte ptr [SharedUserData+0x308 (00000000`7ffe0308)],1
+00007fff`b33ef710 7503            jne     ntdll!NtCreateProcessEx+0x15 (00007fff`b33ef715)
+00007fff`b33ef712 0f05            syscall
+00007fff`b33ef714 c3              ret
+```
+
+But process which created by `NtCreateUserProcess` or `NtCreateProcessEx` are loaded only non-hooked ntdll.dll in initial state.
+We can confirm it with scanning suspended initial process memory.
+Suspended process cannot be attached with debugger, so I wrote a small tool [ProcMemScan](https://github.com/daem0nc0re/TangledWinExec/tree/main/ProcMemScan).
+To test it, I implemented `-d` flag which can pause initial process to the InitialProcessResolver after syscall number detection:
+
+```
+PS C:\Dev> .\InitialProcessResolver.exe -n ntcreateprocessex -d
+
+[>] Trying to create initial process.
+[+] Initial process is created successfully.
+    [*] Process Name : svchost
+    [*] Process ID   : 1336
+[>] Trying to dump Nt API address.
+[*] ntdll.dll @ 0x00007FFFB3350000
+[+] Got 491 entries (Architecure: AMD64).
+[+] NtCreateProcessEx @ 0x00007FFFB33EF700
+[+] Syscall number for NtCreateProcessEx is 77 (0x4D).
+[*] Debug break. To exit this program, hit [ENTER] key.
+```
+
+We can confirm that the syscall number for `NtCreateProcessEx` is 77 from output, and `svchost` process is created by InitialProcessResolver is 1336.
+By scanning this `svchost` with ProcMemScan, we can see that the `svchost` process loads only ntdll.dll as follows:
+
+```
+PS C:\Dev> .\ProcMemScan.exe -p 1336 -l
+
+[>] Trying to get target process memory information.
+[*] Target process is 'svchost' (PID : 1336).
+[+] Got target process memory information.
+
+              Base           Size State       Protect                    Type        Mapped
+0x0000000000000000     0x7FFE0000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x000000007FFE0000         0x1000 MEM_COMMIT  PAGE_READONLY              MEM_PRIVATE N/A
+0x000000007FFE1000         0xC000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x000000007FFED000         0x1000 MEM_COMMIT  PAGE_READONLY              MEM_PRIVATE N/A
+0x000000007FFEE000   0xBCE9C12000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x000000BD69C00000        0x28000 MEM_RESERVE NONE                       MEM_PRIVATE N/A
+0x000000BD69C28000         0x3000 MEM_COMMIT  PAGE_READWRITE             MEM_PRIVATE N/A
+0x000000BD69C2B000       0x1D5000 MEM_RESERVE NONE                       MEM_PRIVATE N/A
+0x000000BD69E00000        0x79000 MEM_RESERVE NONE                       MEM_PRIVATE N/A
+0x000000BD69E79000         0x3000 MEM_COMMIT  PAGE_READWRITE, PAGE_GUARD MEM_PRIVATE N/A
+0x000000BD69E7C000         0x4000 MEM_COMMIT  PAGE_READWRITE             MEM_PRIVATE N/A
+0x000000BD69E80000  0x145FCB70000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x00000203669F0000        0x20000 MEM_COMMIT  PAGE_READWRITE             MEM_PRIVATE N/A
+0x0000020366A10000        0x1F000 MEM_COMMIT  PAGE_READONLY              MEM_MAPPED  N/A
+0x0000020366A2F000 0x7BF1C9D61000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x00007DF530790000         0x1000 MEM_COMMIT  PAGE_EXECUTE_READ          MEM_PRIVATE N/A
+0x00007DF530791000         0xF000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x00007DF5307A0000         0x1000 MEM_COMMIT  PAGE_READONLY              MEM_MAPPED  N/A
+0x00007DF5307A1000         0xF000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x00007DF5307B0000      0x1C67000 MEM_RESERVE NONE                       MEM_MAPPED  N/A
+0x00007DF532417000         0x2000 MEM_COMMIT  PAGE_NOACCESS              MEM_MAPPED  N/A
+0x00007DF532419000       0x165000 MEM_RESERVE NONE                       MEM_MAPPED  N/A
+0x00007DF53257E000         0x1000 MEM_COMMIT  PAGE_NOACCESS              MEM_MAPPED  N/A
+0x00007DF53257F000  0x1F7D2E4F000 MEM_RESERVE NONE                       MEM_MAPPED  N/A
+0x00007FED053CE000         0x1000 MEM_COMMIT  PAGE_READONLY              MEM_MAPPED  N/A
+0x00007FED053CF000    0x809C3D000 MEM_RESERVE NONE                       MEM_MAPPED  N/A
+0x00007FF50F00C000         0x2000 MEM_COMMIT  PAGE_READONLY              MEM_MAPPED  N/A
+0x00007FF50F00E000     0x1F049000 MEM_RESERVE NONE                       MEM_MAPPED  N/A
+0x00007FF52E057000      0x1426000 MEM_COMMIT  PAGE_NOACCESS              MEM_MAPPED  N/A
+0x00007FF52F47D000         0x9000 MEM_COMMIT  PAGE_READONLY              MEM_MAPPED  N/A
+0x00007FF52F486000      0x132A000 MEM_RESERVE NONE                       MEM_MAPPED  N/A
+0x00007FF5307B0000    0x270F80000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x00007FF7A1730000         0x1000 MEM_COMMIT  PAGE_READONLY              MEM_IMAGE   C:\Windows\System32\svchost.exe
+0x00007FF7A1731000         0x7000 MEM_COMMIT  PAGE_EXECUTE_READ          MEM_IMAGE   C:\Windows\System32\svchost.exe
+0x00007FF7A1738000         0x4000 MEM_COMMIT  PAGE_READONLY              MEM_IMAGE   C:\Windows\System32\svchost.exe
+0x00007FF7A173C000         0x1000 MEM_COMMIT  PAGE_WRITECOPY             MEM_IMAGE   C:\Windows\System32\svchost.exe
+0x00007FF7A173D000         0x1000 MEM_COMMIT  PAGE_READONLY              MEM_IMAGE   C:\Windows\System32\svchost.exe
+0x00007FF7A173E000         0x1000 MEM_COMMIT  PAGE_WRITECOPY             MEM_IMAGE   C:\Windows\System32\svchost.exe
+0x00007FF7A173F000         0x2000 MEM_COMMIT  PAGE_READONLY              MEM_IMAGE   C:\Windows\System32\svchost.exe
+0x00007FF7A1741000    0x811C0F000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+0x00007FFFB3350000         0x1000 MEM_COMMIT  PAGE_READONLY              MEM_IMAGE   C:\Windows\System32\ntdll.dll
+0x00007FFFB3351000       0x130000 MEM_COMMIT  PAGE_EXECUTE_READ          MEM_IMAGE   C:\Windows\System32\ntdll.dll
+0x00007FFFB3481000        0x4D000 MEM_COMMIT  PAGE_READONLY              MEM_IMAGE   C:\Windows\System32\ntdll.dll
+0x00007FFFB34CE000         0xC000 MEM_COMMIT  PAGE_WRITECOPY             MEM_IMAGE   C:\Windows\System32\ntdll.dll
+0x00007FFFB34DA000         0xF000 MEM_COMMIT  PAGE_READONLY              MEM_IMAGE   C:\Windows\System32\ntdll.dll
+0x00007FFFB34E9000         0x1000 MEM_COMMIT  PAGE_READWRITE             MEM_IMAGE   C:\Windows\System32\ntdll.dll
+0x00007FFFB34EA000         0x3000 MEM_COMMIT  PAGE_WRITECOPY             MEM_IMAGE   C:\Windows\System32\ntdll.dll
+0x00007FFFB34ED000        0x77000 MEM_COMMIT  PAGE_READONLY              MEM_IMAGE   C:\Windows\System32\ntdll.dll
+0x00007FFFB3564000     0x4CA8C000 MEM_FREE    PAGE_NOACCESS              NONE        N/A
+
+[*] Completed.
+
+PS C:\Dev>
+```
+
+And `NtCreateProcessEx` code is not hooked:
+
+```
+PS C:\Dev> .\ProcMemScan.exe -p 1336 -d -b 0x00007FFFB33EF700 -r 20
+
+[>] Trying to dump target process memory.
+[*] Target process is 'svchost' (PID : 1336).
+[+] Got target process memory.
+    [*] BaseAddress       : 0x00007FFFB33EF000
+    [*] AllocationBase    : 0x00007FFFB3350000
+    [*] RegionSize        : 0x92000
+    [*] AllocationProtect : PAGE_EXECUTE_WRITECOPY
+    [*] State             : MEM_COMMIT
+    [*] Protect           : PAGE_EXECUTE_READ
+    [*] Type              : MEM_IMAGE
+    [*] Mapped File Path  : C:\Windows\System32\ntdll.dll
+    [*] Hexdump (0x20 Bytes):
+
+                           00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+
+        00007FFFB33EF700 | 4C 8B D1 B8 4D 00 00 00-F6 04 25 08 03 FE 7F 01 | L.Ñ,M... ö.%.._..
+        00007FFFB33EF710 | 75 03 0F 05 C3 CD 2E C3-0F 1F 84 00 00 00 00 00 | u...AI.A ........
+
+
+[*] Completed.
+
+PS C:\Dev>
+```
 
 
 ## Get-SyscallNumber.ps1
