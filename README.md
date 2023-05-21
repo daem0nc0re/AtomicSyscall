@@ -506,6 +506,8 @@ PS C:\Dev> .\ProcMemScan.exe -p 1336 -d -b 0x00007FFFB33EF700 -r 20
 PS C:\Dev>
 ```
 
+![initialprocessresolver.png](./figures/initialprocessresolver.png)
+
 
 ## Get-SyscallNumber.ps1
 
