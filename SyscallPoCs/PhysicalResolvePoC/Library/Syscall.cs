@@ -50,19 +50,19 @@ namespace PhysicalResolvePoC.Library
 
             try
             {
-                if (Helpers.CompareStringIgnoreCase(architecture, "x86"))
+                if (Helpers.CompareIgnoreCase(architecture, "x86"))
                 {
                     // Patch syscall number
                     Marshal.WriteInt32(this.asmBuffer, 1, syscallNumber);
                     // Patch retn instruction's immediate value
                     Marshal.WriteInt16(this.asmBuffer, 11, (short)(numberOfParameters * 4));
                 }
-                else if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+                else if (Helpers.CompareIgnoreCase(architecture, "AMD64"))
                 {
                     // Patch syscall number
                     Marshal.WriteInt32(this.asmBuffer, 4, syscallNumber);
                 }
-                else if (Helpers.CompareStringIgnoreCase(architecture, "ARM64"))
+                else if (Helpers.CompareIgnoreCase(architecture, "ARM64"))
                 {
                     // Patch svc instruction
                     Marshal.WriteInt32(this.asmBuffer, (int)(0xD4000001 | (syscallNumber << 5)));
@@ -92,15 +92,15 @@ namespace PhysicalResolvePoC.Library
             byte[] syscallBytes;
             string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
 
-            if (Helpers.CompareStringIgnoreCase(architecture, "x86"))
+            if (Helpers.CompareIgnoreCase(architecture, "x86"))
             {
                 syscallBytes = this.syscallBytesX86;
             }
-            else if (Helpers.CompareStringIgnoreCase(architecture, "AMD64"))
+            else if (Helpers.CompareIgnoreCase(architecture, "AMD64"))
             {
                 syscallBytes = this.syscallBytesX64;
             }
-            else if (Helpers.CompareStringIgnoreCase(architecture, "ARM64"))
+            else if (Helpers.CompareIgnoreCase(architecture, "ARM64"))
             {
                 syscallBytes = this.syscallBytesArm64;
             }

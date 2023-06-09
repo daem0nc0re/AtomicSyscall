@@ -36,8 +36,8 @@ namespace PhysicalResolvePoC.Library
                     Console.WriteLine("    [*] Architecture : {0}", pe.Architecture);
                     Console.WriteLine("    [*] Image Name   : {0}", imageName);
 
-                    if (!Helpers.CompareStringIgnoreCase(imageName, "ntdll.dll") &&
-                        !Helpers.CompareStringIgnoreCase(imageName, "win32u.dll"))
+                    if (!Helpers.CompareIgnoreCase(imageName, "ntdll.dll") &&
+                        !Helpers.CompareIgnoreCase(imageName, "win32u.dll"))
                     {
                         Console.WriteLine("[-] Loaded file is not ntdll.dll or win32u.dll.");
 

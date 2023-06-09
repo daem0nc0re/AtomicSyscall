@@ -14,7 +14,7 @@ namespace HeavensGatePoC
         {
             string architecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
 
-            if (!Environment.Is64BitOperatingSystem || !Helpers.CompareStringIgnoreCase(architecture, "x86"))
+            if (!Environment.Is64BitOperatingSystem || !Helpers.CompareIgnoreCase(architecture, "x86"))
             {
                 Console.WriteLine("\n[!] Should be run in AMD64.\n");
 
