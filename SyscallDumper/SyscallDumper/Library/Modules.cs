@@ -67,7 +67,7 @@ namespace SyscallDumper.Library
             if (syscallNumber >= 0)
                 table = LookupSyscallNumber(table, syscallNumber);
 
-            result.Append(string.Format("[Syscall Table from {0}]\n\n", fullPath));
+            result.AppendFormat("[Syscall Table from {0}]\n\n", fullPath);
             
             if (table.Count > 0)
             {
@@ -104,10 +104,10 @@ namespace SyscallDumper.Library
                 }
             }
 
-            result.Append(string.Format("\n[*] Found {0} syscall(s).\n", table.Count));
+            result.AppendFormat("\n[*] Found {0} syscall(s).\n", table.Count);
 
             if (!string.IsNullOrEmpty(filter))
-                result.Append(string.Format("[*] Filter String : \"{0}\"\n", filter));
+                result.AppendFormat("[*] Filter String : \"{0}\"\n", filter);
             
             return result.ToString();
         }
@@ -190,7 +190,7 @@ namespace SyscallDumper.Library
                 results.Append("#               DELETED SYSCALLS               #\n");
                 results.Append("################################################\n\n");
                 results.Append(Helpers.BuildSyscallTableDefault(deleted));
-                results.Append(string.Format("\n[*] Deleted {0} syscall(s).\n", deleted.Count));
+                results.AppendFormat("\n[*] Deleted {0} syscall(s).\n", deleted.Count);
             }
 
             if (modified.Count > 0)
@@ -202,7 +202,7 @@ namespace SyscallDumper.Library
                 results.Append("#               MODIFIED SYSCALLS              #\n");
                 results.Append("################################################\n\n");;
                 results.Append(Helpers.BuildModifiedSyscallTableText(oldTable, modified));
-                results.Append(string.Format("\n[*] Modified {0} syscall(s).\n", modified.Count));
+                results.AppendFormat("\n[*] Modified {0} syscall(s).\n", modified.Count);
             }
 
             if (added.Count > 0)
@@ -214,11 +214,11 @@ namespace SyscallDumper.Library
                 results.Append("#                 NEW SYSCALLS                 #\n");
                 results.Append("################################################\n\n");
                 results.Append(Helpers.BuildSyscallTableDefault(added));
-                results.Append(string.Format("\n[*] Added {0} syscall(s).\n", added.Count));
+                results.AppendFormat("\n[*] Added {0} syscall(s).\n", added.Count);
             }
 
             if (!string.IsNullOrEmpty(filter))
-                results.Append(string.Format("[*] Filter String : \"{0}\"\n", filter));
+                results.AppendFormat("[*] Filter String : \"{0}\"\n", filter);
 
             return results.ToString();
         }

@@ -54,7 +54,7 @@ namespace SyscallDumper.Library
                 new string('-', 10 + maxNameLength + maxNumberLength + maxHexNumberLength));
 
             result.Append(delimiter);
-            result.Append(string.Format(formatter, columnName, columnNumber, columnHexNumber));
+            result.AppendFormat(formatter, columnName, columnNumber, columnHexNumber);
             result.Append(delimiter);
 
             foreach (var name in syscallTableModified.Keys)
@@ -68,11 +68,7 @@ namespace SyscallDumper.Library
                     syscallTableBase[name].ToString("X4"),
                     syscallTableModified[name].ToString("X4"));
 
-                result.Append(string.Format(
-                    formatter,
-                    name,
-                    numberString,
-                    hexNumberString));
+                result.AppendFormat(formatter, name, numberString, hexNumberString);
             }
 
             result.Append(delimiter);
@@ -210,16 +206,16 @@ namespace SyscallDumper.Library
                 new string('-', 10 + maxNameLength + maxNumberLength + maxHexNumberLength));
 
             result.Append(delimiter);
-            result.Append(string.Format(formatter, columnName, columnNumber, columnHexNumber));
+            result.AppendFormat(formatter, columnName, columnNumber, columnHexNumber);
             result.Append(delimiter);
 
             foreach (var entry in syscallTable)
             {
-                result.Append(string.Format(
+                result.AppendFormat(
                     formatter,
                     entry.Key,
                     entry.Value,
-                    string.Format("0x{0}", entry.Value.ToString("X4"))));
+                    string.Format("0x{0}", entry.Value.ToString("X4")));
             }
 
             result.Append(delimiter);
