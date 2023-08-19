@@ -76,7 +76,7 @@ namespace SyscallDumper.Library
                     if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
                         result.Append(Helpers.BuildSyscallTableAsC(table, "NT_SYSCALLS"));
                     else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
-                        result.Append(Helpers.BuildSyscallTableAsC(table, "NTGDI_SYSCALLS"));
+                        result.Append(Helpers.BuildSyscallTableAsC(table, "WIN32K_SYSCALLS"));
                     else
                         result.Append(Helpers.BuildSyscallTableAsC(table, "SYSCALLS"));
                 }
@@ -85,7 +85,7 @@ namespace SyscallDumper.Library
                     if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
                         result.Append(Helpers.BuildSyscallTableAsCSharp(table, "NT_SYSCALLS"));
                     else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
-                        result.Append(Helpers.BuildSyscallTableAsCSharp(table, "NTGDI_SYSCALLS"));
+                        result.Append(Helpers.BuildSyscallTableAsCSharp(table, "WIN32K_SYSCALLS"));
                     else
                         result.Append(Helpers.BuildSyscallTableAsCSharp(table, "SYSCALLS"));
                 }
@@ -94,7 +94,7 @@ namespace SyscallDumper.Library
                     if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
                         result.Append(Helpers.BuildSyscallTableAsPython(table, "g_NtSyscalls"));
                     else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
-                        result.Append(Helpers.BuildSyscallTableAsPython(table, "g_NtGdiSyscalls"));
+                        result.Append(Helpers.BuildSyscallTableAsPython(table, "g_Win32kSyscalls"));
                     else
                         result.Append(Helpers.BuildSyscallTableAsPython(table, "g_Syscalls"));
                 }
