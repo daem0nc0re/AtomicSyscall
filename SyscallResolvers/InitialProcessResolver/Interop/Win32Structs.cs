@@ -314,35 +314,15 @@ namespace InitialProcessResolver.Interop
 
         public UNICODE_STRING(string s)
         {
-            byte[] bytes;
-
-            if (string.IsNullOrEmpty(s))
-            {
-                Length = 0;
-                bytes = new byte[2];
-            }
-            else
-            {
-                Length = (ushort)(s.Length * 2);
-                bytes = Encoding.Unicode.GetBytes(s);
-            }
-
+            Length = (ushort)(s.Length * 2);
             MaximumLength = (ushort)(Length + 2);
-            buffer = Marshal.AllocHGlobal(MaximumLength);
-
-            Marshal.Copy(new byte[MaximumLength], 0, buffer, MaximumLength);
-            Marshal.Copy(bytes, 0, buffer, bytes.Length);
+            buffer = Marshal.StringToHGlobalUni(s);
         }
 
         public void Dispose()
         {
             Marshal.FreeHGlobal(buffer);
             buffer = IntPtr.Zero;
-        }
-
-        public override string ToString()
-        {
-            return Marshal.PtrToStringUni(buffer);
         }
 
         public IntPtr GetBuffer()
@@ -353,6 +333,14 @@ namespace InitialProcessResolver.Interop
         public void SetBuffer(IntPtr _buffer)
         {
             buffer = _buffer;
+        }
+
+        public override string ToString()
+        {
+            if ((Length == 0) || (buffer == IntPtr.Zero))
+                return null;
+            else
+                return Marshal.PtrToStringUni(buffer, Length / 2);
         }
     }
 }
