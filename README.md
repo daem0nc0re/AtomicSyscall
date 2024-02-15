@@ -369,6 +369,7 @@ The purpose of this project is to help to learn how in-memory syscall number res
 | [HellsGateResolver](./SyscallResolvers/HellsGateResolver) | This PoC resolves the syscall numbers in ntdll.dll by the Hell's Gate technique. Not works for functions patched with anti-virus products. |
 | [HalosGateResolver](./SyscallResolvers/HalosGateResolver) | This PoC resolves the syscall numbers in ntdll.dll by the Halo's Gate technique. |
 | [InitialProcessResolver](./SyscallResolvers/InitialProcessResolver) | This PoC resolves syscall numbers in ntdll.dll from initial process which created by `NtCreateUserProcess`. |
+| [KnownDllsResolver](./SyscallResolvers/KnownDllsResolver) | This PoC resolves syscall numbers in ntdll.dll with `\KnownDlls\ntdll.dll`. |
 
 The following figure shows the difference between Hell's Gate and Halo's Gate in anti-virus software installed environment.
 Hell's Gate technique does not work for patched `NtCreateProcessEx` function.
