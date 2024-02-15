@@ -31,59 +31,55 @@ function Get-ProcAddress {
         [string]$ProcName
     )
 
-    $functionAddress = [IntPtr]::Zero
-    $export_dir = [IntPtr]::Zero
-    $numberOfNames = 0
-    $addressOfFunctions = [IntPtr]::Zero
-    $addressOfNames = [IntPtr]::Zero
-    $addressOfNameOrdinals = [IntPtr]::Zero
-    $namePointer = [IntPtr]::Zero
+    $routineBase = [IntPtr]::Zero
+    $directoryOffset = 0
+    $e_lfanew = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, 0x3C)
 
     if ([System.Runtime.InteropServices.Marshal]::ReadInt16($Module) -ne 0x5A4D) {
         return [IntPtr]::Zero
     }
 
-    $e_lfanew = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, 0x3C)
-
     if ([IntPtr]::Size -eq 8) {
-        $virtual_address = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $e_lfanew + 0x18 + 0x70)
-        $export_dir = [IntPtr]($Module.ToInt64() + $virtual_address)
-        $numberOfNames = [System.Runtime.InteropServices.Marshal]::ReadInt32($export_dir, 0x18)
-        $addressOfFunctions = [IntPtr]($Module.ToInt64() + [System.Runtime.InteropServices.Marshal]::ReadInt32($export_dir, 0x1C))
-        $addressOfNames = [IntPtr]($Module.ToInt64() + [System.Runtime.InteropServices.Marshal]::ReadInt32($export_dir, 0x20))
-        $addressOfNameOrdinals = [IntPtr]($Module.ToInt64() + [System.Runtime.InteropServices.Marshal]::ReadInt32($export_dir, 0x24))
+        $directoryOffset = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $e_lfanew + 0x88)
     } else {
-        $virtual_address = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $e_lfanew + 0x18 + 0x60)
-        $export_dir = [IntPtr]($Module.ToInt32() + $virtual_address)
-        $numberOfNames = [System.Runtime.InteropServices.Marshal]::ReadInt32($export_dir, 0x18)
-        $addressOfFunctions = [IntPtr]($Module.ToInt32() + [System.Runtime.InteropServices.Marshal]::ReadInt32($export_dir, 0x1C))
-        $addressOfNames = [IntPtr]($Module.ToInt32() + [System.Runtime.InteropServices.Marshal]::ReadInt32($export_dir, 0x20))
-        $addressOfNameOrdinals = [IntPtr]($Module.ToInt32() + [System.Runtime.InteropServices.Marshal]::ReadInt32($export_dir, 0x24))
+        $directoryOffset = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $e_lfanew + 0x78)
     }
 
+    if ($directoryOffset -eq 0) {
+        return [IntPtr]::Zero
+    }
+
+    $numberOfNames = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $directoryOffset + 0x18)
+    $addressOfFunctions = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $directoryOffset + 0x1C)
+    $addressOfNames = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $directoryOffset + 0x20)
+    $addressOfNameOrdinals = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $directoryOffset + 0x24)
+
     for ($counter = 0; $counter -lt $numberOfNames; $counter++) {
+        $offset = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $addressOfNames + (4 * $counter))
+
         if ([IntPtr]::Size -eq 8) {
-            $namePointer = [IntPtr]($Module.ToInt64() + [System.Runtime.InteropServices.Marshal]::ReadInt32($addressOfNames, 4 * $counter))
+            $namePointer = [IntPtr]::new($Module.ToInt64() + [UInt32]$offset)
         } else {
-            $namePointer = [IntPtr]($Module.ToInt32() + [System.Runtime.InteropServices.Marshal]::ReadInt32($addressOfNames, 4 * $counter))
+            $namePointer = [IntPtr]::new($Module.ToInt32() + $offset)
         }
 
-        $entryName = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($namePointer)
+        $exportName = [System.Runtime.InteropServices.Marshal]::PtrToStringAnsi($namePointer)
 
-        if ($entryName -ieq $ProcName) {
-            $ordinal = [System.Runtime.InteropServices.Marshal]::ReadInt16($addressOfNameOrdinals, 2 * $counter)
-            $offset = [System.Runtime.InteropServices.Marshal]::ReadInt32($addressOfFunctions, 4 * $ordinal)
+        if ($exportName -ieq $ProcName) {
+            $ordinal = [System.Runtime.InteropServices.Marshal]::ReadInt16($Module, $addressOfNameOrdinals + (2 * $counter))
+            $offset = [System.Runtime.InteropServices.Marshal]::ReadInt32($Module, $addressOfFunctions + (4 * $ordinal))
 
             if ([IntPtr]::Size -eq 8) {
-                $functionAddress = [IntPtr]($Module.ToInt64() + $offset)
+                $routineBase = [IntPtr]::new($Module.ToInt64() + [UInt32]$offset)
             } else {
-                $functionAddress = [IntPtr]($Module.ToInt32() + $offset)
+                $routineBase = [IntPtr]::new($Module.ToInt32() + $offset)
             }
+
             break
         }
     }
 
-    $functionAddress
+    $routineBase
 }
 
 
