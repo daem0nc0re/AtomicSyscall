@@ -26,9 +26,9 @@ namespace KnownDllsResolver.Interop
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtOpenSection(
-            ref IntPtr SectionHandle,
+            out IntPtr SectionHandle,
             ACCESS_MASK DesiredAccess,
-            ref OBJECT_ATTRIBUTES ObjectAttributes);
+            in OBJECT_ATTRIBUTES ObjectAttributes);
 
         [DllImport("ntdll.dll")]
         public static extern NTSTATUS NtUnmapViewOfSection(

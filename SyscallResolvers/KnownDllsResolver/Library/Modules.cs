@@ -15,9 +15,6 @@ namespace KnownDllsResolver.Library
             int nSyscallNumber = -1;
             var hSection = IntPtr.Zero;
             var objectPath = @"\KnownDlls\ntdll.dll";
-            var objectAttributes = new OBJECT_ATTRIBUTES(
-                objectPath,
-                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE);
 
             if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
             {
@@ -33,10 +30,15 @@ namespace KnownDllsResolver.Library
 
             Console.WriteLine("[>] Trying to get section handle to {0}.", objectPath);
 
-            ntstatus = NativeMethods.NtOpenSection(
-                ref hSection,
-                ACCESS_MASK.SECTION_MAP_READ,
-                ref objectAttributes);
+            using (var objectAttributes = new OBJECT_ATTRIBUTES(
+                objectPath,
+                OBJECT_ATTRIBUTES_FLAGS.OBJ_CASE_INSENSITIVE))
+            {
+                ntstatus = NativeMethods.NtOpenSection(
+                    out hSection,
+                    ACCESS_MASK.SECTION_MAP_READ,
+                    in objectAttributes);
+            }
 
             if (ntstatus != Win32Consts.STATUS_SUCCESS)
             {
@@ -78,7 +80,7 @@ namespace KnownDllsResolver.Library
 
                 foreach (var entry in syscallTable)
                 {
-                    if (entry.Key.IndexOf(syscallName, StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (entry.Key.IndexOf(syscallName, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         syscallName = entry.Key;
                         nSyscallNumber = entry.Value;
