@@ -222,11 +222,5 @@ namespace SyscallDumper.Library
 
             return result.ToString();
         }
-
-
-        public static bool CompareIgnoreCase(string strA, string strB)
-        {
-            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
-        }
     }
 }

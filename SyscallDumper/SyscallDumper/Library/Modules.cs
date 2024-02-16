@@ -14,12 +14,11 @@ namespace SyscallDumper.Library
             Dictionary<string, int> syscallTable,
             string filter)
         {
-            var comparison = StringComparison.OrdinalIgnoreCase;
             var filtered = new Dictionary<string, int>();
 
             foreach (var entry in syscallTable)
             {
-                if (entry.Key.IndexOf(filter, comparison) >= 0)
+                if (entry.Key.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
                     filtered.Add(entry.Key, entry.Value);
             }
 
@@ -71,29 +70,29 @@ namespace SyscallDumper.Library
             
             if (table.Count > 0)
             {
-                if (Helpers.CompareIgnoreCase(format, "c"))
+                if (string.Compare(format, "c", true) == 0)
                 {
-                    if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
+                    if (string.Compare(moduleName, "ntdll.dll", true) == 0)
                         result.Append(Helpers.BuildSyscallTableAsC(table, "NT_SYSCALLS"));
-                    else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
+                    else if (string.Compare(moduleName, "win32u.dll", true) == 0)
                         result.Append(Helpers.BuildSyscallTableAsC(table, "WIN32K_SYSCALLS"));
                     else
                         result.Append(Helpers.BuildSyscallTableAsC(table, "SYSCALLS"));
                 }
-                else if (Helpers.CompareIgnoreCase(format, "cs"))
+                else if (string.Compare(format, "cs", true) == 0)
                 {
-                    if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
+                    if (string.Compare(moduleName, "ntdll.dll", true) == 0)
                         result.Append(Helpers.BuildSyscallTableAsCSharp(table, "NT_SYSCALLS"));
-                    else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
+                    else if (string.Compare(moduleName, "win32u.dll", true) == 0)
                         result.Append(Helpers.BuildSyscallTableAsCSharp(table, "WIN32K_SYSCALLS"));
                     else
                         result.Append(Helpers.BuildSyscallTableAsCSharp(table, "SYSCALLS"));
                 }
-                else if (Helpers.CompareIgnoreCase(format, "py"))
+                else if (string.Compare(format, "py", true) == 0)
                 {
-                    if (Helpers.CompareIgnoreCase(moduleName, "ntdll.dll"))
+                    if (string.Compare(moduleName, "ntdll.dll", true) == 0)
                         result.Append(Helpers.BuildSyscallTableAsPython(table, "g_NtSyscalls"));
-                    else if (Helpers.CompareIgnoreCase(moduleName, "win32u.dll"))
+                    else if (string.Compare(moduleName, "win32u.dll", true) == 0)
                         result.Append(Helpers.BuildSyscallTableAsPython(table, "g_Win32kSyscalls"));
                     else
                         result.Append(Helpers.BuildSyscallTableAsPython(table, "g_Syscalls"));
@@ -125,7 +124,6 @@ namespace SyscallDumper.Library
             if (string.IsNullOrEmpty(oldFilePath) || string.IsNullOrEmpty(newFilePath))
             {
                 Console.WriteLine("[-] Missing file name to diff.");
-
                 return null;
             }
 
@@ -135,13 +133,11 @@ namespace SyscallDumper.Library
             if (!File.Exists(oldFilePath))
             {
                 Console.WriteLine("[-] {0} does not exist.", oldFilePath);
-
                 return null;
             }
             else if (!File.Exists(newFilePath))
             {
                 Console.WriteLine("[-] {0} does not exist.", newFilePath);
-
                 return null;
             }
 
@@ -152,10 +148,9 @@ namespace SyscallDumper.Library
             oldTable = Utilities.DumpSyscallNumber(oldFilePath, out string oldModule);
             newTable = Utilities.DumpSyscallNumber(newFilePath, out string newModule);
 
-            if (!Helpers.CompareIgnoreCase(oldModule, newModule))
+            if (string.Compare(oldModule, newModule, true) != 0)
             {
                 Console.WriteLine("[-] Module names don't match.");
-
                 return null;
             }
 

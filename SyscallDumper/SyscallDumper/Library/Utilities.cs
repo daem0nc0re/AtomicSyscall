@@ -9,18 +9,14 @@ namespace SyscallDumper.Library
     {
         public static Dictionary<string, int> DumpSyscallNumber(string filePath, out string moduleName)
         {
-            string imageName;
-            int syscallNumber;
             Dictionary<string, IntPtr> exports;
             var results = new Dictionary<string, int>();
-            var rgx = new Regex(@"^Nt\S+$");
             var fullPath = Path.GetFullPath(filePath);
             moduleName = null;
 
             if (!File.Exists(fullPath))
             {
                 Console.WriteLine("[-] {0} does not exists.", fullPath);
-
                 return results;
             }
 
@@ -30,18 +26,15 @@ namespace SyscallDumper.Library
 
                 using (var pe = new PeFile(fullPath))
                 {
-                    imageName = pe.GetExportImageName();
-                    moduleName = imageName;
+                    moduleName = pe.GetExportImageName();
 
                     Console.WriteLine("[+] {0} is loaded successfully.", fullPath);
                     Console.WriteLine("    [*] Architecture : {0}", pe.Architecture);
-                    Console.WriteLine("    [*] Image Name   : {0}", imageName);
+                    Console.WriteLine("    [*] Image Name   : {0}", moduleName);
 
-                    if (!Helpers.CompareIgnoreCase(imageName, "ntdll.dll") &&
-                        !Helpers.CompareIgnoreCase(imageName, "win32u.dll"))
+                    if (!Regex.IsMatch(moduleName, @"^(ntdll|win32u)\.dll$", RegexOptions.IgnoreCase))
                     {
                         Console.WriteLine("[-] Loaded file is not ntdll.dll or win32u.dll.");
-
                         return results;
                     }
 
@@ -49,38 +42,26 @@ namespace SyscallDumper.Library
 
                     foreach (var entry in exports)
                     {
-                        if (!rgx.IsMatch(entry.Key))
+                        if (!entry.Key.StartsWith("Nt"))
                             continue;
 
                         if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.I386)
                         {
                             if (pe.ReadByte(entry.Value) == 0xB8) // mov eax, 0x????
-                            {
-                                syscallNumber = pe.ReadInt32(entry.Value, 1);
-                                results.Add(entry.Key, syscallNumber);
-                            }
+                                results.Add(entry.Key, pe.ReadInt32(entry.Value, 1));
                         }
                         else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.AMD64)
                         {
-                            if (pe.SearchBytes(
-                                entry.Value,
-                                0x20,
-                                new byte[] { 0x0F, 0x05 }).Length > 0) // syscall
+                            if (pe.SearchBytes(entry.Value, 0x20, new byte[] { 0x0F, 0x05 }).Length > 0) // syscall
                             {
                                 if ((uint)pe.ReadInt32(entry.Value) == 0xB8D18B4C) // mov r10, rcx; mov eax, 0x???? 
-                                {
-                                    syscallNumber = pe.ReadInt32(entry.Value, 4);
-                                    results.Add(entry.Key, syscallNumber);
-                                }
+                                    results.Add(entry.Key, pe.ReadInt32(entry.Value, 4));
                             }
                         }
                         else if (pe.Architecture == PeFile.IMAGE_FILE_MACHINE.ARM64)
                         {
                             if (((uint)pe.ReadInt32(entry.Value) & 0xFFE0001F) == 0xD4000001) // svc #0x????
-                            {
-                                syscallNumber = (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF; // Decode svc instruction
-                                results.Add(entry.Key, syscallNumber);
-                            }
+                                results.Add(entry.Key, (pe.ReadInt32(entry.Value) >> 5) & 0x0000FFFF); // Decode svc instruction
                         }
                         else
                         {
