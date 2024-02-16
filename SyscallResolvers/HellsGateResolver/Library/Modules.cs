@@ -21,10 +21,7 @@ namespace HellsGateResolver.Library
 
                 foreach (var entry in table)
                 {
-                    if (string.Compare(
-                        entry.Key,
-                        syscallName,
-                        StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Compare(entry.Key, syscallName, true) == 0)
                     {
                         syscallName = entry.Key;
                         nSyscallNumber = entry.Value;

@@ -10,19 +10,13 @@ namespace InitialProcessResolver.Library
 
     internal class Helpers
     {
-        public static bool CompareIgnoreCase(string strA, string strB)
-        {
-            return (string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0);
-        }
-
-
         public static IntPtr GetNtdllBaseAddress()
         {
             var pNtdll = IntPtr.Zero;
 
             foreach (ProcessModule module in Process.GetCurrentProcess().Modules)
             {
-                if (CompareIgnoreCase(module.ModuleName, "ntdll.dll"))
+                if (string.Compare(module.ModuleName, "ntdll.dll", true) == 0)
                 {
                     pNtdll = module.BaseAddress;
                     break;

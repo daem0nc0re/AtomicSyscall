@@ -85,7 +85,7 @@ namespace InitialProcessResolver.Library
 
                     foreach (var entry in exports)
                     {
-                        if (Helpers.CompareIgnoreCase(entry.Key, syscallName))
+                        if (string.Compare(entry.Key, syscallName, true) == 0)
                         {
                             syscallName = entry.Key;
 
@@ -170,6 +170,7 @@ namespace InitialProcessResolver.Library
                 }
 
                 Console.WriteLine("[*] Terminate initial process.");
+                NativeMethods.NtClose(hThread);
                 NativeMethods.NtTerminateProcess(hProcess, Win32Consts.STATUS_SUCCESS);
             }
             else

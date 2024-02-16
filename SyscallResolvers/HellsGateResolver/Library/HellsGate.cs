@@ -556,10 +556,7 @@ namespace HellsGateResolver.Library
                         0x20,
                         new byte[] { 0x0F, 0x05 }).Length > 0) // syscall
                     {
-                        offsets = SearchBytes(
-                            pFunction,
-                            0x8,
-                            new byte[] { 0xB8 }); // mov eax, 0x????????
+                        offsets = SearchBytes(pFunction, 0x8, new byte[] { 0xB8 }); // mov eax, 0x????????
 
                         if (offsets.Length > 0)
                         {
@@ -606,13 +603,8 @@ namespace HellsGateResolver.Library
 
             foreach (ProcessModule mod in modules)
             {
-                if (string.Compare(
-                    Path.GetFileName(mod.FileName),
-                    "ntdll.dll",
-                    StringComparison.OrdinalIgnoreCase) == 0)
-                {
+                if (string.Compare(Path.GetFileName(mod.FileName), "ntdll.dll", true) == 0)
                     return mod.BaseAddress;
-                }
             }
 
             return IntPtr.Zero;

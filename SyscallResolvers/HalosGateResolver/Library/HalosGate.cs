@@ -429,37 +429,6 @@ namespace HalosGateResolver.Library
         /*
          * Functions
          */
-        private static IntPtr[] SearchBytes(
-            IntPtr basePointer,
-            int range,
-            byte[] searchBytes)
-        {
-            var results = new List<IntPtr>();
-            IntPtr pointer;
-            IntPtr offsetPointer;
-            bool found;
-
-            for (var count = 0; count < (range - searchBytes.Length); count++)
-            {
-                found = false;
-                pointer = new IntPtr(basePointer.ToInt64() + count);
-
-                for (var position = 0; position < searchBytes.Length; position++)
-                {
-                    offsetPointer = new IntPtr(pointer.ToInt64() + position);
-                    found = (Marshal.ReadByte(offsetPointer) == searchBytes[position]);
-
-                    if (!found)
-                        break;
-                }
-
-                if (found)
-                    results.Add(pointer);
-            }
-
-            return results.ToArray();
-        }
-
 
         private static Dictionary<string, IntPtr> ListNtFunctionTableFromNtdll()
         {
@@ -575,10 +544,7 @@ namespace HalosGateResolver.Library
                 {
                     foreach (var entry in functionTable)
                     {
-                        if (string.Compare(
-                            entry.Key,
-                            syscallName,
-                            StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Compare(entry.Key, syscallName, true) == 0)
                         {
                             syscallName = entry.Key;
                             pBaseAddress = entry.Value;
@@ -643,13 +609,8 @@ namespace HalosGateResolver.Library
 
             foreach (ProcessModule mod in modules)
             {
-                if (string.Compare(
-                    Path.GetFileName(mod.FileName),
-                    "ntdll.dll",
-                    StringComparison.OrdinalIgnoreCase) == 0)
-                {
+                if (string.Compare(Path.GetFileName(mod.FileName), "ntdll.dll", true) == 0)
                     return mod.BaseAddress;
-                }
             }
 
             return IntPtr.Zero;
