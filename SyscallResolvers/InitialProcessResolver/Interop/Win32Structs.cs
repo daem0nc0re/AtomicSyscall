@@ -8,67 +8,6 @@ namespace InitialProcessResolver.Interop
     using SIZE_T = UIntPtr;
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct CURDIR
-    {
-        public UNICODE_STRING DosPath;
-        public IntPtr Handle;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct OBJECT_ATTRIBUTES : IDisposable
-    {
-        public int Length;
-        public IntPtr RootDirectory;
-        private IntPtr objectName;
-        public OBJECT_ATTRIBUTES_FLAGS Attributes;
-        public IntPtr SecurityDescriptor;
-        public IntPtr SecurityQualityOfService;
-
-        public OBJECT_ATTRIBUTES(
-            string name,
-            OBJECT_ATTRIBUTES_FLAGS attrs)
-        {
-            Length = 0;
-            RootDirectory = IntPtr.Zero;
-            objectName = IntPtr.Zero;
-            Attributes = attrs;
-            SecurityDescriptor = IntPtr.Zero;
-            SecurityQualityOfService = IntPtr.Zero;
-
-            Length = Marshal.SizeOf(this);
-            ObjectName = new UNICODE_STRING(name);
-        }
-
-        public UNICODE_STRING ObjectName
-        {
-            get
-            {
-                return (UNICODE_STRING)Marshal.PtrToStructure(objectName, typeof(UNICODE_STRING));
-            }
-
-            set
-            {
-                bool fDeleteOld = objectName != IntPtr.Zero;
-
-                if (!fDeleteOld)
-                    objectName = Marshal.AllocHGlobal(Marshal.SizeOf(value));
-
-                Marshal.StructureToPtr(value, objectName, fDeleteOld);
-            }
-        }
-
-        public void Dispose()
-        {
-            if (objectName != IntPtr.Zero)
-            {
-                Marshal.DestroyStructure(objectName, typeof(UNICODE_STRING));
-                Marshal.FreeHGlobal(objectName);
-                objectName = IntPtr.Zero;
-            }
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct PROCESS_BASIC_INFORMATION
     {
         public NTSTATUS ExitStatus;
@@ -208,50 +147,6 @@ namespace InitialProcessResolver.Interop
         public ushort Length;
         public uint TimeStamp;
         public STRING DosPath;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct RTL_USER_PROCESS_PARAMETERS
-    {
-        public uint MaximumLength;
-        public uint Length;
-        public uint Flags;
-        public uint DebugFlags;
-        public IntPtr ConsoleHandle;
-        public uint ConsoleFlags;
-        public IntPtr StandardInput;
-        public IntPtr StandardOutput;
-        public IntPtr StandardError;
-        public CURDIR CurrentDirectory;
-        public UNICODE_STRING DllPath;
-        public UNICODE_STRING ImagePathName;
-        public UNICODE_STRING CommandLine;
-        public IntPtr Environment;
-        public uint StartingX;
-        public uint StartingY;
-        public uint CountX;
-        public uint CountY;
-        public uint CountCharsX;
-        public uint CountCharsY;
-        public uint FillAttribute;
-        public uint WindowFlags;
-        public uint ShowWindowFlags;
-        public UNICODE_STRING WindowTitle;
-        public UNICODE_STRING DesktopInfo;
-        public UNICODE_STRING ShellInfo;
-        public UNICODE_STRING RuntimeData;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)]
-        public RTL_DRIVE_LETTER_CURDIR[] CurrentDirectores;
-        public ulong EnvironmentSize;
-        public ulong EnvironmentVersion;
-        public IntPtr PackageDependencyData;
-        public uint ProcessGroupId;
-        public uint LoaderThreads;
-        public UNICODE_STRING RedirectionDllName;
-        public UNICODE_STRING HeapPartitionName;
-        public IntPtr DefaultThreadpoolCpuSetMasks;
-        public uint DefaultThreadpoolCpuSetMaskCount;
-        public uint DefaultThreadpoolThreadMaximum;
     }
 
     [StructLayout(LayoutKind.Sequential)]
