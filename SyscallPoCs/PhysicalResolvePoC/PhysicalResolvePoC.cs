@@ -78,7 +78,7 @@ namespace PhysicalResolvePoC
                 Console.WriteLine(
                     "{0,5} 0x{1,-16} {2}",
                     idx,
-                    entry.ImageBase.ToString("X"),
+                    entry.ImageBase.ToString(Environment.Is64BitProcess ? "X16" : "X8"),
                     Encoding.ASCII.GetString(entry.ImageName).Trim('\x00'));
 
                 offsetBuffer = new IntPtr(offsetBuffer.ToInt64() + sizeEntry);
